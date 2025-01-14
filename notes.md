@@ -9,6 +9,7 @@ Ready to go! a2
 - [Course instruction](https://github.com/webprogramming260)
 - [Canvas](https://byu.instructure.com)
 - [MDN](https://developer.mozilla.org)
+Example: https://github.com/webprogramming260/startup-example/blob/main/README.md
 
 ## AWS Notes
 
