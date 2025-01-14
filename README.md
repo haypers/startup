@@ -27,7 +27,7 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 
 ### Design
 [view the ninjamock](https://ninjamock.com/s/TDX91Lx)
-
+![image](ThePublicPixel.png)
 ```mermaid
 sequenceDiagram
     actor You
