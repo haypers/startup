@@ -25,17 +25,11 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 ### Design
 [view the ninjamock](https://ninjamock.com/s/TDX91Lx)
 ![image](ThePublicPixel.png)
-```mermaid
-sequenceDiagram
-    actor You
-    actor Website
-    You->>Website: Replace this with your design
-```
 
 ### Key features
 
 - Users can color pixles with the color of the day every 5 minutes.
-- Users can plan for a pixle so other users can see that plan.
+- Users can plan for a pixle so other users can see that plan - When a user clicks on a pixle, a simple menu of users will be provided who currently have a plan for that pixle. Hovering over those user names will render their full plan on the screen. You can choose to follow a plan, or ignore them all.
 - Users can have a log of relivent changes.
 - Users can see plans by hovering over pixles.
 
