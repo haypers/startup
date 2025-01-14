@@ -26,8 +26,7 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 Have you ever wanted to make fun pixel art, but don't know where to start? don't worry! The public Pixel is where you can have fun making pixel art with the public, while engaging in a gamified turf war. Color pixles with the colors of the day, provided by a third party, and plan for future works to seek the colaboration of the internet.
 
 ### Design
-
-https://ninjamock.com/s/TDX91Lx
+[view the ninjamock](https://ninjamock.com/s/TDX91Lx)
 
 ```mermaid
 sequenceDiagram
@@ -52,7 +51,7 @@ I am going to use the required technologies in the following ways.
 - **React** - Encode, decode pixle array, and plans array.
 - **Service** - Send/receive chaning pixles, and plans, and notifications.
 - **DB/Login** - need an account to know when you can make a change to the public pixel art.
-- **WebSocket** - The colors of the day will be dependet on 3rd parties.
+- **WebSocket** - The colors of the day will be dependet on [zoodinkers color of the day](https://colors.zoodinkers.com/)
 
 ## 🚀 AWS deliverable
 
