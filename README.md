@@ -1,7 +1,5 @@
 # The Public Pixel
 
-[My Notes](notes.md)
-
 The public pixel is a community made pixel art engeine. Inspired by r/place, this will be a home for strangers to colaborate on pixle art.
 
 Every five minutes (Or maybe every 30 seconds or something, still deciding.) a user may color a pixle. Between these moments, a user can 'plan' for a pixle, denoting that they plan for it to match a certain color in the future. When placing a pixle, users will be informed of any plans for that pixle and will have the opporutnity to accept or reject the plan.
@@ -9,8 +7,6 @@ Every five minutes (Or maybe every 30 seconds or something, still deciding.) a u
 Users get a log of users who accept their plan or override a pixle they built.
 
 ## 🚀 Specification Deliverable
-
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
 - [x] Proper use of Markdown
 - [x] A concise and compelling elevator pitch
@@ -24,6 +20,7 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 
 ### Design
 [view the ninjamock](https://ninjamock.com/s/TDX91Lx)
+
 ![image](ThePublicPixel.png)
 
 ### Key features
@@ -34,8 +31,6 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 
 ### Technologies
 
-I am going to use the required technologies in the following ways.
-
 - **HTML** - Text boxes for timer, and UI, and placeholder squares.
 - **CSS** - Format timer, keep UI clean.
 - **React** - Encode, decode pixle array, and plans array. Allow the user to select a color from the pallet, and mark a pixel with that color. Also allow the user to plan for up to 40ish pixels, and notify a user if they ever select a pixle that has a plan so they can preview the plan, and decide to follow it or not. A super simple overlay grapfic will show the user the planned pixles from the other user. 
@@ -45,9 +40,7 @@ I am going to use the required technologies in the following ways.
 
 ## 🚀 AWS deliverable
 
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **Server deployed and accessible with custom domain name** - [My server link](https://yourdomainnamehere.click).
+- [x] **Server deployed and accessible with custom domain name** - [Haypers.com](https://haypers.com).
 
 ## 🚀 HTML deliverable
 
