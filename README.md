@@ -36,11 +36,11 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - **React** - Encode, decode pixle array, and plans array. Allow the user to select a color from the pallet, and mark a pixel with that color. Also allow the user to plan for up to 40ish pixels, and notify a user if they ever select a pixle that has a plan so they can preview the plan, and decide to follow it or not. A super simple overlay grapfic will show the user the planned pixles from the other user. 
 - **Service** - Send/receive chaning pixles, and plans, and notifications. Keep a record of timestamps when the user submit the last pixle so you can authenticate if they are allowed to submit another.
 - **DB/Login** - need an account to know when you can make a change to the public pixel art. Store the array of public pixels, as well as an array of user data that contains planned pixels, and a log of the last few relivent changes.
-- **WebSocket** - The colors of the day will be dependet on [zoodinkers color of the day](https://colors.zoodinkers.com/) I will also add a script that generates a few more hex codes by offseting that zoodinkers one, so the user has about 5 colors every day to choose from.
+- **WebSocket** - The colors of the day will be dependet on [zoodinkers color of the day](https://colors.zoodinkers.com/) I will also add a script that generates a few more hex codes by offseting that zoodinkers one, so the user has about 5 colors every day to choose from. Additionaly, users can receve websocket notifications from the server when another user makes an action. This will keep all clients up to date.
 
 ## 🚀 AWS deliverable
 
-- [x] **Server deployed and accessible with custom domain name** - [Haypers.com](https://haypers.com).
+- [x] **Server deployed and accessible with custom domain name** - [Haypers.com](https://startup.haypers.com/).
 
 ## 🚀 HTML deliverable
 
