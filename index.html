@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Public Pixel</title>
     <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <!-- Use header, main, and footer elements to give semantic structure -->
@@ -15,12 +16,12 @@
       <!-- Navigation elements -->
       <nav>
         <!-- Menu is a semantic alternative to <ul> that represents an interaction -->
-        <menu>
+        <ul>
           <li><a href="index.html">The Pixels</a></li>
           <li><a href="signin.html">Sign In</a></li>
           <li><a href="history.html">History</a></li>
           <li><a href="about.html">About</a></li>
-        </menu>
+        </ul>
       </nav>
 
       <!-- Since we don't have the ability to style we use old style HTML to give some visual formatting -->
@@ -28,33 +29,60 @@
     </header>
 
     <main>
+
       <h1>Welcome to The Public Pixel</h1>
 
-      <p>there will be a tight 50 X 50 pixel grid here, but I need css to make it show up lol.</p>
-      <div style="width: 100px; height: 100px; background-color: blue;"></div>
+      <section class="grid-container">
+        <div class="grid" id="grid"></div>
+      </section>
+      <script>
+          const grid = document.getElementById("grid");
+          for (let i = 0; i < 2500; i++) {
+              const pixel = document.createElement("div");
+              pixel.classList.add("pixel");
 
+              //I know I'm getting ahead of myself, but I needed some color in my pixles to test my css, so I had gpt make this temp code:
+              let hue = Math.floor(Math.random() * 360); // Random hue (0-360)
 
-      <p>the following will display if you are signed in:</p>
+              let saturation = 80; // Keep colors vibrant
+              let lightness = 60; // Base lightness
 
-      <div>
-        <h3>Draw A pixel in:</h3>
-        <p>24 seconds</p>
-      </div>
+              let color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+              let borderColor = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`; // Darker version
 
-      <div>
-        <h3>Colors of the Day:</h3>
-        <p> a grid of 5 colors will be rendered here with css.</p>
-      </div>
-      <div>
-        <h3>
-          Notifications:
-        </h3>
-        <ul>
-          <li>Bob destroyed your pixel at 23, BD</li>
-          <li>Gusgus destroyed your pixel at 22, BH</li>
-          <li>Sarah followed your plan at pixel 32, BC</li>
-          <li>Norman ignored your plan at pixel 25, BA</li>
-        </ul>
+              pixel.style.backgroundColor = color;
+              pixel.style.border = `1px solid ${borderColor}`; // Border using box-shadow
+              
+              // end temp color code.
+
+              grid.appendChild(pixel);
+          }
+      </script>
+
+      <section class="info-section">
+        <p>the following will display if you are signed in:</p>
+
+        <div>
+          <h3>Draw A pixel in:</h3>
+          <p>24 seconds</p>
+        </div>
+
+        <div>
+          <h3>Colors of the Day:</h3>
+          <p> a grid of 5 colors will be rendered here with css.</p>
+        </div>
+        <div>
+          <h3>
+            Notifications:
+          </h3>
+          <ul>
+            <li>Bob destroyed your pixel at 23, BD</li>
+            <li>Gusgus destroyed your pixel at 22, BH</li>
+            <li>Sarah followed your plan at pixel 32, BC</li>
+            <li>Norman ignored your plan at pixel 25, BA</li>
+          </ul>
+        </section>
+
       </div>
     </main>
 
