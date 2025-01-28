@@ -1,8 +1,10 @@
 # CS 260 Notes
 
-[My startup](https://simon.cs260.click)
+[My startup](https://startup.haypers.com)
 
-Ready to go! a2
+Ready to go!
+
+There is a table element in html I could use for the pixles, but then I would need to css style a 50x50 grid of boxes, so maybe I just write a script to create the boxes.
 
 ## Helpful links
 

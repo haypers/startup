@@ -1,18 +1,10 @@
-# The Public Pixel
+# [The Public Pixel](https://startup.haypers.com/)
 
 The public pixel is a community made pixel art engeine. Inspired by r/place, this will be a home for strangers to colaborate on pixle art.
 
 Every five minutes (Or maybe every 30 seconds or something, still deciding.) a user may color a pixle. Between these moments, a user can 'plan' for a pixle, denoting that they plan for it to match a certain color in the future. When placing a pixle, users will be informed of any plans for that pixle and will have the opporutnity to accept or reject the plan.
 
 Users get a log of users who accept their plan or override a pixle they built.
-
-## 🚀 Specification Deliverable
-
-- [x] Proper use of Markdown
-- [x] A concise and compelling elevator pitch
-- [x] Description of key features
-- [x] Description of how you will use each technology
-- [x] One or more rough sketches of your application. Images must be embedded in this file using Markdown image references.
 
 ### Elevator pitch
 
@@ -38,23 +30,22 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - **DB/Login** - need an account to know when you can make a change to the public pixel art. Store the array of public pixels, as well as an array of user data that contains planned pixels, and a log of the last few relivent changes.
 - **WebSocket** - The colors of the day will be dependet on [zoodinkers color of the day](https://colors.zoodinkers.com/) I will also add a script that generates a few more hex codes by offseting that zoodinkers one, so the user has about 5 colors every day to choose from. Additionaly, users can receve websocket notifications from the server when another user makes an action. This will keep all clients up to date.
 
-## 🚀 AWS deliverable
-
+## 🚀 deliverables
+- [x] Proper use of Markdown
+- [x] A concise and compelling elevator pitch
+- [x] Description of key features
+- [x] Description of how you will use each technology
+- [x] One or more rough sketches of your application.
 - [x] **Server deployed and accessible with custom domain name** - [Haypers.com](https://startup.haypers.com/).
-
-## 🚀 HTML deliverable
-
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **HTML pages** - I did not complete this part of the deliverable.
-- [ ] **Proper HTML element usage** - I did not complete this part of the deliverable.
-- [ ] **Links** - I did not complete this part of the deliverable.
-- [ ] **Text** - I did not complete this part of the deliverable.
-- [ ] **3rd party API placeholder** - I did not complete this part of the deliverable.
-- [ ] **Images** - I did not complete this part of the deliverable.
-- [ ] **Login placeholder** - I did not complete this part of the deliverable.
-- [ ] **DB data placeholder** - I did not complete this part of the deliverable.
-- [ ] **WebSocket placeholder** - I did not complete this part of the deliverable.
+- [x] **HTML pages**
+- [x] **Proper HTML element usage** - I've got a lot in there now, but I'll be needing a lot of css to make it look good.
+- [x] **Links** 
+- [x] **Text** 
+- [x] **3rd party API placeholder**
+- [x] **Images** 
+- [x] **Login placeholder** 
+- [x] **DB data placeholder** 
+- [x] **WebSocket placeholder** 
 
 ## 🚀 CSS deliverable
 
