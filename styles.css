@@ -28,7 +28,14 @@ nav ul li a {
   color: white;
   text-decoration: none;
 }
-.grid-container {
+
+.UI {
+  display:contents;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.art-container {
   display: flex;
   justify-content: center;
   margin-top: 20px;
@@ -51,7 +58,7 @@ nav ul li a {
 }
 
 /* Sections */
-.info-section {
+.Timer, .Notifications, .Colors{
   margin-top: 20px;
   text-align: left;
   max-width: 600px;

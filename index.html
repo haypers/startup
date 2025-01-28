@@ -31,58 +31,61 @@
     <main>
 
       <h1>Welcome to The Public Pixel</h1>
+      <div class="UI">
+          <section class="art-container">
+            <div class="grid" id="grid"></div>
+          </section>
+            <script>
+                const grid = document.getElementById("grid");
+                for (let i = 0; i < 2500; i++) {
+                    const pixel = document.createElement("div");
+                    pixel.classList.add("pixel");
 
-      <section class="grid-container">
-        <div class="grid" id="grid"></div>
-      </section>
-      <script>
-          const grid = document.getElementById("grid");
-          for (let i = 0; i < 2500; i++) {
-              const pixel = document.createElement("div");
-              pixel.classList.add("pixel");
+                    //I know I'm getting ahead of myself, but I needed some color in my pixles to test my css, so I had gpt make this temp code:
+                    let hue = Math.floor(Math.random() * 360); // Random hue (0-360)
 
-              //I know I'm getting ahead of myself, but I needed some color in my pixles to test my css, so I had gpt make this temp code:
-              let hue = Math.floor(Math.random() * 360); // Random hue (0-360)
+                    let saturation = 80; // Keep colors vibrant
+                    let lightness = 60; // Base lightness
 
-              let saturation = 80; // Keep colors vibrant
-              let lightness = 60; // Base lightness
+                    let color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                    let borderColor = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`; // Darker version
 
-              let color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-              let borderColor = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`; // Darker version
+                    pixel.style.backgroundColor = color;
+                    pixel.style.border = `1px solid ${borderColor}`; // Border using box-shadow
+                    
+                    // end temp color code.
 
-              pixel.style.backgroundColor = color;
-              pixel.style.border = `1px solid ${borderColor}`; // Border using box-shadow
-              
-              // end temp color code.
+                    grid.appendChild(pixel);
+                }
+            </script>
 
-              grid.appendChild(pixel);
-          }
-      </script>
+          <section class="Timer">
+            <div>
+              <h3>Draw A pixel in:</h3>
+              <p>24 seconds</p>
+            </div>
+          </section>
 
-      <section class="info-section">
-        <p>the following will display if you are signed in:</p>
+          <section class="Colors">
+            <div>
+              <h3>Colors of the Day:</h3>
+              <p> a grid of 5 colors will be rendered here with css.</p>
+            </div>
+          </section>
 
-        <div>
-          <h3>Draw A pixel in:</h3>
-          <p>24 seconds</p>
-        </div>
-
-        <div>
-          <h3>Colors of the Day:</h3>
-          <p> a grid of 5 colors will be rendered here with css.</p>
-        </div>
-        <div>
-          <h3>
-            Notifications:
-          </h3>
-          <ul>
-            <li>Bob destroyed your pixel at 23, BD</li>
-            <li>Gusgus destroyed your pixel at 22, BH</li>
-            <li>Sarah followed your plan at pixel 32, BC</li>
-            <li>Norman ignored your plan at pixel 25, BA</li>
-          </ul>
-        </section>
-
+          <section class="Notifications">
+            <div>
+              <h3>
+                Notifications:
+              </h3>
+              <ul>
+                <li>Bob destroyed your pixel at 23, BD</li>
+                <li>Gusgus destroyed your pixel at 22, BH</li>
+                <li>Sarah followed your plan at pixel 32, BC</li>
+                <li>Norman ignored your plan at pixel 25, BA</li>
+              </ul>
+            </div>
+          </section>
       </div>
     </main>
 
