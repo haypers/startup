@@ -37,15 +37,15 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] Description of how you will use each technology
 - [x] One or more rough sketches of your application.
 - [x] **Server deployed and accessible with custom domain name** - [Haypers.com](https://startup.haypers.com/).
-- [x] **HTML pages**
+- [x] **HTML pages** - I have the project organized into 4 pages at the present, but if I can remove one I will. I think I might be able to make the history tab just a feature on the main game page. 
 - [x] **Proper HTML element usage** - I've got a lot in there now, but I'll be needing a lot of css to make it look good.
-- [x] **Links** 
-- [x] **Text** 
-- [x] **3rd party API placeholder**
-- [x] **Images** 
-- [x] **Login placeholder** 
-- [x] **DB data placeholder** 
-- [x] **WebSocket placeholder** 
+- [x] **Links** - In the header I have links to the 4 pages, and I have this in all of the pages.
+- [x] **Text** - The first page is the best example. I have example elements in there that I will make appear on the sides of the pixle art if the screen is big enough.
+- [x] **3rd party API placeholder** - The color of the day section will be populated with colors provided from 3rd parties.
+- [x] **Images** - I got my fabicon working! kinda fun. I'm going to pull in some svgs for the icons soon too.
+- [x] **Login placeholder**  - I have an account tab that I pulled from simon.
+- [x] **DB data placeholder** - The history tab will have a screenshot of the art from every day. But It's not really a screenshot. I'll probably render these the same way as the home page art, and just store an array of what the data looked like at 9am every day or something.
+- [x] **WebSocket placeholder** - On the homepage I have the Notifications area where the user will get server sent websocket messages about pixle changes. 
 
 ## 🚀 CSS deliverable
 
