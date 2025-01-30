@@ -1,4 +1,9 @@
 body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
@@ -6,10 +11,23 @@ body {
   text-align: center;
 }
 
+header, footer {
+  width: 100%;
+  max-width: none;
+  text-align: center;
+}
+
 header {
   padding: 20px;
   background-color: #333;
   color: white;
+}
+
+footer {
+  padding: 20px;
+  background-color: #999;
+  color: black;
+  margin-top: 20px;
 }
 
 nav ul {
@@ -30,21 +48,29 @@ nav ul li a {
 }
 
 .UI {
-  display:contents;
+  display: grid;
+  grid-template-columns: 250px minmax(500px, 1fr) 250px; /* Sidebar, Grid, Sidebar */
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  align-items: start; /* Ensure items align at the top */
+  /*display:contents;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 20px;*/  
 }
 
 .art-container {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  grid-column: 2; /*center*/
+  grid-row: 1;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(50, 1fr);
-  width: min(90vw, 90vh);
+  width: min(90vw, 600px);
+  height: min(90vw, 600px);
 }
 
 .pixel {
@@ -57,13 +83,44 @@ nav ul li a {
   opacity: 0.5;
 }
 
+/* Sidebar containers */
+.InfoPanel {
+  grid-column: 1; /* Left sidebar */
+  align-self: start;
+}
+
+.Colors {
+  grid-column: 3; /* Right sidebar */
+  align-self: start;
+}
+
 /* Sections */
-.Timer, .Notifications, .Colors{
+.InfoPanel, .Colors{
   margin-top: 20px;
   text-align: left;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+}
+
+
+/* Responsive behavior: stack UI elements below the pixel art when screen is too small */
+@media (max-width: 900px) {
+  .UI {
+      grid-template-columns: 1fr; /* Single column layout */
+  }
+
+  .art-container, .Colors, .Timer, .Notifications {
+      grid-column: 1;
+  }
+
+  .Colors {
+      order: 1;
+  }
+  
+  .InfoPanel {
+      order: 2;
+  }
 }
 
 /* Footer */
