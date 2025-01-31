@@ -12,8 +12,8 @@ body {
 }
 
 header, footer {
-  width: 100%;
-  max-width: none;
+  width: 90%;
+  max-width: 90%;
   text-align: center;
 }
 
@@ -24,10 +24,8 @@ header {
 }
 
 footer {
-  padding: 20px;
   background-color: #999;
   color: black;
-  margin-top: 20px;
 }
 
 nav ul {
@@ -48,6 +46,7 @@ nav ul li a {
 }
 
 .UI {
+  grid-auto-rows: min-content;
   display: grid;
   grid-template-columns: 250px minmax(500px, 1fr) 250px; /* Sidebar, Grid, Sidebar */
   gap: 20px;
@@ -67,6 +66,7 @@ nav ul li a {
 }
 
 .grid {
+  padding-top: 40px;
   display: grid;
   grid-template-columns: repeat(50, 1fr);
   width: min(90vw, 600px);
@@ -85,8 +85,11 @@ nav ul li a {
 
 /* Sidebar containers */
 .InfoPanel {
-  grid-column: 1; /* Left sidebar */
-  align-self: start;
+  grid-column: 1;
+  grid-row: 1; /* Force it into the first row */
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between Timer and Notifications */
 }
 
 .Colors {
@@ -105,20 +108,22 @@ nav ul li a {
 
 
 /* Responsive behavior: stack UI elements below the pixel art when screen is too small */
-@media (max-width: 900px) {
+@media (max-width: 1150px) {
   .UI {
       grid-template-columns: 1fr; /* Single column layout */
   }
 
-  .art-container, .Colors, .Timer, .Notifications {
+  .art-container, .Colors, .InfoPanel {
       grid-column: 1;
   }
 
   .Colors {
+      grid-row: 2;
       order: 1;
   }
   
   .InfoPanel {
+      grid-row: 3;
       order: 2;
   }
 }
