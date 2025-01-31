@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Public Pixel</title>
     <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="indexstyles.css">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -15,13 +16,13 @@
 
       <!-- Navigation elements -->
       <nav>
-        <!-- Menu is a semantic alternative to <ul> that represents an interaction -->
-        <ul>
-          <li><a href="index.html">The Pixels</a></li>
-          <li><a href="signin.html">Sign In</a></li>
-          <li><a href="history.html">History</a></li>
-          <li><a href="about.html">About</a></li>
-        </ul>
+          <!-- Menu is a semantic alternative to <ul> that represents an interaction -->
+          <ul>
+              <li><a href="index.html">The Pixels</a></li>
+              <li><a href="signin.html">Sign In</a></li>
+              <li><a href="history.html">History</a></li>
+              <li><a href="about.html">About</a></li>
+          </ul>
       </nav>
 
       <!-- Since we don't have the ability to style we use old style HTML to give some visual formatting -->
@@ -69,8 +70,8 @@
 
           <section class="art-container">
             <div class="grid" id="grid"></div>
-            </section>
-                <script>
+          </section>
+              <script>
                     const grid = document.getElementById("grid");
                     for (let i = 0; i < 2500; i++) {
                         const pixel = document.createElement("div");
@@ -92,7 +93,7 @@
     
                         grid.appendChild(pixel);
                     }
-            </script>
+              </script>
   
       </div>
     </main>

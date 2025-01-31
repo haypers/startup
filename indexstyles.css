@@ -1,0 +1,101 @@
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.UI {
+  grid-auto-rows: min-content;
+  display: grid;
+  grid-template-columns: 250px 1fr 250px; /* Sidebar, Grid, Sidebar */
+  gap: 20px;
+  width: 100%;
+  
+  align-items: start;
+}
+
+.art-container {
+  justify-content: center;
+  grid-column: 2; /*center*/
+  grid-row: 1;
+  width: 1fr;
+  height: 100%;
+}
+
+.grid {
+  padding-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(50, 1fr);
+  width: 100%;
+  height: 100%;
+}
+/*I cant get the grid to render correctly, taking up 1fr of space!*/
+.pixel {
+  aspect-ratio: 1 / 1;
+  /*border: 1px solid black;
+  background-color: white;*/
+}
+
+.pixel:hover {
+  opacity: 0.5;
+}
+
+/* Sidebar containers */
+.InfoPanel {
+  grid-column: 1;
+  grid-row: 1; /* Force it into the first row */
+  display: flex;
+  flex-direction: column;
+  align-content: left;
+  gap: 10px; /* Space between Timer and Notifications */
+}
+
+.Colors {
+  grid-column: 3; /* Right sidebar */
+  align-self: start;
+}
+
+/* Sections */
+.InfoPanel, .Colors{
+  margin-top: 20px;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+/* Responsive behavior: stack UI elements below the pixel art when screen is too small */
+@media (max-width: 1150px) {
+  .UI {
+      grid-template-columns: 1fr; /* Single column layout */
+  }
+
+  .art-container, .Colors, .InfoPanel {
+      grid-column: 1;
+  }
+
+  .Colors {
+      grid-row: 2;
+      order: 1;
+  }
+  
+  .InfoPanel {
+      grid-row: 3;
+      order: 2;
+  }
+}
+
+/* Footer */
+footer {
+  padding: 20px;
+  background-color: #999;
+  color: black;
+  margin-top: 20px;
+}
