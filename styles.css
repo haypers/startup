@@ -9,10 +9,12 @@ header, footer {
     background-color: #333;
     color: white;
   }
-  
-  footer {
+
+footer {
+    padding: 20px;
     background-color: #999;
     color: black;
+    margin-top: 20px;
   }
 
   body {

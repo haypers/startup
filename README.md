@@ -51,9 +51,9 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Header, footer, and main content body** - I did not complete this part of the deliverable.
-- [ ] **Navigation elements** - I did not complete this part of the deliverable.
-- [ ] **Responsive to window resizing** - I did not complete this part of the deliverable.
+- [x] **Header, footer, and main content body** - Used bootstrap for basic stuff, but for main page I had to do some crazy stuff to get the art to scale correctly.
+- [x] **Navigation elements** - I'm going to keep those elements simple, but I might give them a box at some point too.
+- [x] **Responsive to window resizing** - This took a while to get right on the main page.
 - [ ] **Application elements** - I did not complete this part of the deliverable.
 - [ ] **Application text content** - I did not complete this part of the deliverable.
 - [ ] **Application images** - I did not complete this part of the deliverable.
