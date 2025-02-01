@@ -30,14 +30,25 @@
           <section class="Colors">
             <div>
               <h3>Colors of the Day:</h3>
-              
+
               <div class="color-grid">
-                <div class="color-box"></div>
+                <div class="color-box" id="color-of-the-day"></div>
                 <div class="color-box"></div>
                 <div class="color-box"></div>
                 <div class="color-box"></div>
                 <div class="color-box"></div>
               </div>
+              <script>
+                  const today = new Date().toISOString().split('T')[0];
+                  fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`http://colors.zoodinkers.com/api?date=${today}`)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                      const parsedData = JSON.parse(data.contents);
+                      const colorOfTheDay = parsedData.hex;
+                      document.getElementById('color-of-the-day').style.backgroundColor = colorOfTheDay;
+                    })
+                    .catch(error => console.error('Error fetching color of the day:', error));
+              </script>
             </div>
           </section>
           
