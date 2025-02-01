@@ -21,7 +21,7 @@ body {
 .art-container {
   display: flex;
   justify-content: center;
-  grid-column: 2; /*center*/
+  grid-column: 2;
   grid-row: 1;
 }
 
@@ -40,19 +40,33 @@ body {
   opacity: 0.5;
 }
 
-/* Sidebar containers */
 .InfoPanel {
   grid-column: 1;
-  grid-row: 1; /* Force it into the first row */
+  grid-row: 1; 
   display: flex;
   flex-direction: column;
   align-self: left;
-  gap: 10px; /* Space between Timer and Notifications */
+  gap: 10px; 
 }
 
 .Colors {
-  grid-column: 3; /* Right sidebar */
+  grid-column: 3; 
   align-self: start;
+}
+
+.color-grid {
+  display: flex;
+  flex-direction:column;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.color-box {
+  width: min(70px, 13vw);
+  height: min(70px, 13vw);
+  background-color: grey; 
+  border: black 1px solid;
+  margin: 10px;
 }
 
 /* Sections */
@@ -64,11 +78,9 @@ body {
   margin-right: auto;
 }
 
-
-/* Responsive behavior: stack UI elements below the pixel art when screen is too small */
-@media (max-width: 1150px) {
+@media (max-width: 1000px) {
   .UI {
-      grid-template-columns: 1fr; /* Single column layout */
+      grid-template-columns: 1fr; 
   }
 
   .art-container, .Colors, .InfoPanel {
@@ -78,6 +90,13 @@ body {
   .Colors {
       grid-row: 2;
       order: 1;
+  }
+
+  .color-grid {
+    display: flex;
+    flex-direction:row;
+    align-items: center;
+    margin-top: 10px;
   }
   
   .InfoPanel {
