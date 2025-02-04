@@ -46,16 +46,12 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] **Login placeholder**  - I have an account tab that I pulled from simon.
 - [x] **DB data placeholder** - The history tab will have a screenshot of the art from every day. But It's not really a screenshot. I'll probably render these the same way as the home page art, and just store an array of what the data looked like at 9am every day or something.
 - [x] **WebSocket placeholder** - On the homepage I have the Notifications area where the user will get server sent websocket messages about pixle changes. 
-
 ## 🚀 CSS deliverable
-
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
 - [x] **Header, footer, and main content body** - Used bootstrap for basic stuff, but for main page I had to do some crazy stuff to get the art to scale correctly.
-- [x] **Navigation elements** - I'm going to keep those elements simple, but I might give them a box at some point too.
-- [x] **Responsive to window resizing** - This took a while to get right on the main page.
-- [ ] **Application elements** - I did not complete this part of the deliverable.
-- [ ] **Application text content** - I did not complete this part of the deliverable.
+- [x] **Navigation elements** - I'm going to keep those elements simple, but I might give them a box at some point too. I did make sure the css for the header is consistent across all 4 pages.
+- [x] **Responsive to window resizing** - This took a while to get right on the main page. I found a tutorial on column mode formating, but for the longest time my columns tried to render on seperate rows, so I had to specify rows for each of my elements.
+- [x] **Application elements** - You'll notice that the color pallets move to a horizontal allignment under the art if the screen becomes narrow, and they scale to match the width of the screen in that case.
+- [x] **Application text content** - The text is in 2 sections, each set to a fixed width of 250 px. I need to add some scaling, but I'm afraid to get my heart set on any sizeing untill I have some JS modifying the text so I know how long the words will be.
 - [ ] **Application images** - I did not complete this part of the deliverable.
 
 ## 🚀 React part 1: Routing deliverable
