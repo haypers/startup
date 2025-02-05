@@ -68,6 +68,10 @@ body {
   border: black 1px solid;
   margin: 10px;
 }
+.brush-icon {
+  width: min(40px, 8vw);
+  height: min(40px, 8vw);
+}
 
 .color-box:hover {
   opacity: 0.5;
