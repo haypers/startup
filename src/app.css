@@ -17,7 +17,7 @@ footer {
     margin-top: 20px;
   }
 
-  body {
+  .body {
   display: flex;
   flex-direction: column;
   align-items: center;
