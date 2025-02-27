@@ -6,6 +6,7 @@ export function Pixels({ signedIn }) {
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
   const [brushColor, setBrushColor] = useState('');
+  const [isPainting, setIsPainting] = useState(false);
 
   // Effect for generating pixels
   useEffect(() => {
@@ -81,6 +82,16 @@ export function Pixels({ signedIn }) {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   };
 
+  const adjustLightness = (color, amount) => {
+    const { r, g, b } = hexToRgb(color);
+    const hsl = rgbToHsl(r, g, b);
+    hsl.l += amount;
+    if (hsl.l > 100) hsl.l = 100;
+    if (hsl.l < 0) hsl.l = 0;
+    const { r: newR, g: newG, b: newB } = hslToRgb(hsl.h, hsl.s, hsl.l);
+    return rgbToHex(newR, newG, newB);
+  };
+
   const handleColorChange = (e) => {
     const newColor = e.target.value;
     setColorOfTheDay(newColor);
@@ -89,6 +100,20 @@ export function Pixels({ signedIn }) {
 
   const handlePaletteClick = (color) => {
     setBrushColor(color);
+    setIsPainting(true);
+  };
+
+  const handlePixelClick = (id) => {
+    if (isPainting) {
+const borderColor = adjustLightness(brushColor, -20);
+      setPixels((prevPixels) =>
+        prevPixels.map((pixel) =>
+          pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
+        )
+      );
+      setBrushColor('#000000'); // Reset brush color to black
+      setIsPainting(false); // Exit painting state
+    }
   };
 
   return (
@@ -160,6 +185,7 @@ export function Pixels({ signedIn }) {
                   backgroundColor: pixel.color,
                   border: `1px solid ${pixel.borderColor}`,
                 }}
+                onClick={() => handlePixelClick(pixel.id)}
               ></div>
             ))}
           </div>
