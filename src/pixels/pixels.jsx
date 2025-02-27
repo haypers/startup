@@ -4,6 +4,7 @@ import './pixels.css';
 export function Pixels() {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
+  const [colorPalette, setColorPalette] = useState([]);
 
   // Effect for generating pixels
   useEffect(() => {
@@ -24,7 +25,7 @@ export function Pixels() {
     setPixels(newPixels);
   }, []); // Empty dependency array means this runs once on mount
 
-  // Effect for fetching color of the day
+  // Effect for fetching color of the day and generating color palette
   useEffect(() => {
     const fetchColorOfDay = async () => {
       const today = new Date().toISOString().split('T')[0];
@@ -36,7 +37,9 @@ export function Pixels() {
         );
         const data = await response.json();
         const parsedData = JSON.parse(data.contents);
-        setColorOfTheDay(parsedData.hex);
+        const color = parsedData.hex;
+        setColorOfTheDay(color);
+        generateColorPalette(color);
       } catch (error) {
         console.error('Error fetching color of the day:', error);
       }
@@ -44,6 +47,37 @@ export function Pixels() {
 
     fetchColorOfDay();
   }, []); // Empty dependency array means this runs once on mount
+
+  const generateColorPalette = (color) => {
+    const rgb = hexToRgb(color);
+    const washedOut = rgbToHex(
+      Math.min(255, rgb.r + 50),
+      Math.min(255, rgb.g + 50),
+      Math.min(255, rgb.b + 50)
+    );
+    const inverted = rgbToHex(255 - rgb.r, 255 - rgb.g, 255 - rgb.b);
+    const rPlus128 = rgbToHex((rgb.r + 128) % 256, rgb.g, rgb.b);
+    const opposite = rgbToHex(
+      (255 - rgb.r) % 256,
+      rgb.g,
+      (rgb.b - 128 + 256) % 256
+    );
+
+    setColorPalette([color, washedOut, inverted, rPlus128, opposite]);
+  };
+
+  const hexToRgb = (hex) => {
+    const bigint = parseInt(hex.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return { r, g, b };
+  };
+
+  const rgbToHex = (r, g, b) => {
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+
 
   return (
     <main className="container-fluid bg-secondary text-center">
@@ -53,14 +87,13 @@ export function Pixels() {
             <h3>Colors of the Day:</h3>
             <div className="color-grid">
               <img src="brush.svg" alt="Brush icon" className="brush-icon" />
-              <div
-                className="color-box"
-                style={{ backgroundColor: colorOfTheDay }}
-              ></div>
-              <div className="color-box"></div>
-              <div className="color-box"></div>
-              <div className="color-box"></div>
-              <div className="color-box"></div>
+              {colorPalette.map((color, index) => (
+                <div
+                  key={index}
+                  className="color-box"
+                  style={{ backgroundColor: color }}
+                ></div>
+              ))}
             </div>
           </div>
         </section>
