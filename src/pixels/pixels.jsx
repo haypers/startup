@@ -51,9 +51,9 @@ export function Pixels() {
   const generateColorPalette = (color) => {
     const rgb = hexToRgb(color);
     const washedOut = rgbToHex(
-      Math.min(255, rgb.r + 50),
-      Math.min(255, rgb.g + 50),
-      Math.min(255, rgb.b + 50)
+      Math.min(255, rgb.r + 150),
+      Math.min(255, rgb.g + 150),
+      Math.min(255, rgb.b + 150)
     );
     const inverted = rgbToHex(255 - rgb.r, 255 - rgb.g, 255 - rgb.b);
     const rPlus128 = rgbToHex((rgb.r + 128) % 256, rgb.g, rgb.b);
@@ -78,6 +78,12 @@ export function Pixels() {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   };
 
+  const handleColorChange = (e) => {
+    const newColor = e.target.value;
+    setColorOfTheDay(newColor);
+    generateColorPalette(newColor);
+  };
+
 
   return (
     <main className="container-fluid bg-secondary text-center">
@@ -95,6 +101,13 @@ export function Pixels() {
                 ></div>
               ))}
             </div>
+            {/* Color Picker for testing purposes */}
+            {/*<input
+              type="color"
+              value={colorOfTheDay}
+              onChange={handleColorChange}
+              style={{ marginTop: '20px' }}
+            />*/}
           </div>
         </section>
 
