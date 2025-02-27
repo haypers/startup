@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
@@ -7,7 +7,21 @@ import { Pixels } from './pixels/pixels';
 import { History } from './history/history';
 import { About } from './about/about';
 
+const AuthState = {
+    Unknown: 'Unknown',
+    Authenticated: 'Authenticated',
+    Unauthenticated: 'Unauthenticated',
+};
+
 export default function App() {
+    const [authState, setAuthState] = useState(AuthState.Unauthenticated);
+    const [userName, setUserName] = useState('');
+
+    const handleAuthChange = (userName, authState) => {
+        setAuthState(authState);
+        setUserName(userName);
+    };
+
     return (
       <BrowserRouter>
         <div className="body bg-dark text-light">
@@ -22,7 +36,7 @@ export default function App() {
                     </li>
                     <li className="nav-item">
                         <NavLink className="nav-link" to="signin">
-                            Sign In
+                            {authState === AuthState.Authenticated ? 'Account' : 'Sign In'}
                         </NavLink>
                     </li>
                     <li className="nav-item">
@@ -40,11 +54,22 @@ export default function App() {
             </header>
 
             <Routes>
-                <Route path='/' element={<Pixels />} exact />
-                <Route path='/signin' element={<Signin />} />
-                <Route path='/about' element={<About />} />
-                <Route path='/history' element={<History />} />
-                <Route path='*' element={<NotFound />} />
+                <Route
+                    path="/"
+                    element={<Pixels signedIn={authState === AuthState.Authenticated} />}
+                    exact
+                />
+                <Route
+                    path="/signin"
+                    element={
+                    <Signin
+                        onAuthChange={handleAuthChange}
+                    />
+                    }
+                />
+                <Route path="/about" element={<About />} />
+                <Route path="/history" element={<History />} />
+                <Route path="*" element={<NotFound />} />
             </Routes>
 
             <footer>
@@ -57,6 +82,6 @@ export default function App() {
   }
 
 
-  function NotFound() {
+function NotFound() {
     return <main className="container-fluid bg-secondary text-center">404: Return to sender. Address unknown.</main>;
-  }
+}

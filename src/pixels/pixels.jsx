@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './pixels.css';
 
-export function Pixels() {
+export function Pixels({ signedIn }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
@@ -70,7 +70,7 @@ export function Pixels() {
     const bigint = parseInt(hex.slice(1), 16);
     const r = (bigint >> 16) & 255;
     const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
+    const b = (bigint & 255);
     return { r, g, b };
   };
 
@@ -84,7 +84,6 @@ export function Pixels() {
     generateColorPalette(newColor);
   };
 
-
   return (
     <main className="container-fluid bg-secondary text-center">
       <div className="UI">
@@ -92,7 +91,7 @@ export function Pixels() {
           <div>
             <h3>Colors of the Day:</h3>
             <div className="color-grid">
-              <img src="brush.svg" alt="Brush icon" className="brush-icon" />
+              {signedIn && <img src="brush.svg" alt="Brush icon" className="brush-icon" />}
               {colorPalette.map((color, index) => (
                 <div
                   key={index}
@@ -111,26 +110,28 @@ export function Pixels() {
           </div>
         </section>
 
-        <section className="InfoPanel">
-          <section className="Timer">
-            <div>
-              <h3>Draw A pixel in:</h3>
-              <p>24 seconds</p>
-            </div>
-          </section>
+        {signedIn && (
+          <section className="InfoPanel">
+            <section className="Timer">
+              <div>
+                <h3>Draw A pixel in:</h3>
+                <p>24 seconds</p>
+              </div>
+            </section>
 
-          <section className="Notifications">
-            <div>
-              <h3>Notifications:</h3>
-              <ul>
-                <li>Bob destroyed your pixel at 23, BD</li>
-                <li>Gusgus destroyed your pixel at 22, BH</li>
-                <li>Sarah followed your plan at pixel 32, BC</li>
-                <li>Norman ignored your plan at pixel 25, BA</li>
-              </ul>
-            </div>
+            <section className="Notifications">
+              <div>
+                <h3>Notifications:</h3>
+                <ul>
+                  <li>Bob destroyed your pixel at 23, BD</li>
+                  <li>Gusgus destroyed your pixel at 22, BH</li>
+                  <li>Sarah followed your plan at pixel 32, BC</li>
+                  <li>Norman ignored your plan at pixel 25, BA</li>
+                </ul>
+              </div>
+            </section>
           </section>
-        </section>
+        )}
 
         <section className="art-container">
           <div className="grid">
