@@ -11,7 +11,7 @@ const AuthState = {
     Unknown: 'Unknown',
     Authenticated: 'Authenticated',
     Unauthenticated: 'Unauthenticated',
-};
+  };
 
 export default function App() {
     const [authState, setAuthState] = useState(AuthState.Unauthenticated);
@@ -82,6 +82,8 @@ export default function App() {
   }
 
 
-function NotFound() {
+
+
+  function NotFound() {
     return <main className="container-fluid bg-secondary text-center">404: Return to sender. Address unknown.</main>;
-}
+  }

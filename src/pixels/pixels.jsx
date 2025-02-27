@@ -5,6 +5,7 @@ export function Pixels({ signedIn }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
+  const [brushColor, setBrushColor] = useState('');
 
   // Effect for generating pixels
   useEffect(() => {
@@ -32,9 +33,10 @@ export function Pixels({ signedIn }) {
       try {
         const response = await fetch(
           `https://api.allorigins.win/get?url=${encodeURIComponent(
-            `http://colors.zoodinkers.com/api?date=${today}`
+            `http://colors.zoodinkers.com/api`
           )}`
         );
+        console.log(response);
         const data = await response.json();
         const parsedData = JSON.parse(data.contents);
         const color = parsedData.hex;
@@ -42,6 +44,7 @@ export function Pixels({ signedIn }) {
         generateColorPalette(color);
       } catch (error) {
         console.error('Error fetching color of the day:', error);
+        console.log(error);
       }
     };
 
@@ -56,7 +59,7 @@ export function Pixels({ signedIn }) {
       Math.min(255, rgb.b + 150)
     );
     const inverted = rgbToHex(255 - rgb.r, 255 - rgb.g, 255 - rgb.b);
-    const rPlus128 = rgbToHex((rgb.r + 128) % 256, rgb.g, rgb.b);
+    const rPlus128 = rgbToHex((rgb.r * 5) % 256, (rgb.g * -5) % 256, (rgb.b * 10) % 256);
     const opposite = rgbToHex(
       (255 - rgb.r) % 256,
       rgb.g,
@@ -84,6 +87,10 @@ export function Pixels({ signedIn }) {
     generateColorPalette(newColor);
   };
 
+  const handlePaletteClick = (color) => {
+    setBrushColor(color);
+  };
+
   return (
     <main className="container-fluid bg-secondary text-center">
       <div className="UI">
@@ -91,12 +98,22 @@ export function Pixels({ signedIn }) {
           <div>
             <h3>Colors of the Day:</h3>
             <div className="color-grid">
-              {signedIn && <img src="brush.svg" alt="Brush icon" className="brush-icon" />}
+              {signedIn && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 576 512"
+                  className="brush-icon"
+                  fill={brushColor}
+                >
+                  <path d="M339.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L568.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S517.7-4.4 499.1 9.6L262.4 187.2c-24 18-38.2 46.1-38.4 76.1L339.3 367.1zm-19.6 25.4l-116-104.4C143.9 290.3 96 339.6 96 400c0 3.9 .2 7.8 .6 11.6C98.4 429.1 86.4 448 68.8 448L64 448c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/>
+                </svg>
+              )}
               {colorPalette.map((color, index) => (
                 <div
                   key={index}
                   className="color-box"
                   style={{ backgroundColor: color }}
+                  onClick={() => handlePaletteClick(color)}
                 ></div>
               ))}
             </div>
