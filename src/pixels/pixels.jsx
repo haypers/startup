@@ -12,11 +12,11 @@ export function Pixels({ signedIn }) {
   useEffect(() => {
     const newPixels = [];
     for (let i = 0; i < 2500; i++) {
-      const hue = Math.floor(Math.random() * 360);
-      const saturation = 80;
-      const lightness = 60;
-      const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-      const borderColor = `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`;
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      const color = rgbToHex(r, g, b);
+      const borderColor = adjustLightness(color, -40);
       
       newPixels.push({
         id: i,
@@ -84,11 +84,9 @@ export function Pixels({ signedIn }) {
 
   const adjustLightness = (color, amount) => {
     const { r, g, b } = hexToRgb(color);
-    const hsl = rgbToHsl(r, g, b);
-    hsl.l += amount;
-    if (hsl.l > 100) hsl.l = 100;
-    if (hsl.l < 0) hsl.l = 0;
-    const { r: newR, g: newG, b: newB } = hslToRgb(hsl.h, hsl.s, hsl.l);
+    const newR = Math.min(255, Math.max(0, r + amount));
+    const newG = Math.min(255, Math.max(0, g + amount));
+    const newB = Math.min(255, Math.max(0, b + amount));
     return rgbToHex(newR, newG, newB);
   };
 
@@ -105,7 +103,7 @@ export function Pixels({ signedIn }) {
 
   const handlePixelClick = (id) => {
     if (isPainting) {
-const borderColor = adjustLightness(brushColor, -20);
+const borderColor = adjustLightness(brushColor, -40);
       setPixels((prevPixels) =>
         prevPixels.map((pixel) =>
           pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
