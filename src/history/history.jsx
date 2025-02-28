@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './history.css';
 
 export function History() {
   const [images, setImages] = useState([]);
@@ -21,9 +22,13 @@ export function History() {
         <p>No history saved yet</p>
       ) : (
         images.map((image, index) => (
-          <div key={index} style={{ padding: '20px' }}>
+          <div key={index} className="image-container">
             <h3>{image.date.toLocaleString()}</h3>
-            <img src={image.imageData} alt={`Pixel art from ${image.date.toLocaleString()}`} />
+            <img
+              src={image.imageData}
+              alt={`Pixel art from ${image.date.toLocaleString()}`}
+              className="pixel-art-image"
+            />
           </div>
         ))
       )}
