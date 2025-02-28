@@ -6,7 +6,6 @@
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f8f9fa;
   text-align: center;
 }
 
@@ -64,8 +63,7 @@
 .color-box {
   width: min(70px, 13vw);
   height: min(70px, 13vw);
-  background-color: grey; 
-  border: black 1px solid;
+  border: black 2px solid;
   margin: 10px;
 }
 .brush-icon {
