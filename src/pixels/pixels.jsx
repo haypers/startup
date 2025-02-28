@@ -81,6 +81,14 @@ export function Pixels({ signedIn, username }) {
     }
   }, [signedIn, timer]);
 
+  // Effect for checking and generating image every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAndGenerateImage();
+    }, 60000); // 60000 ms = 1 minute
+    return () => clearInterval(interval);
+  }, [pixels]);
+
   const generateColorPalette = (color) => {
     const rgb = hexToRgb(color);
     const washedOut = rgbToHex(
@@ -136,16 +144,55 @@ export function Pixels({ signedIn, username }) {
   const handlePixelClick = (id) => {
     if (isPainting) {
       const borderColor = adjustLightness(brushColor, -40);
-      setPixels((prevPixels) =>
-        prevPixels.map((pixel) =>
-          pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username } : pixel
-        )
+      const updatedPixels = pixels.map((pixel) =>
+        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username } : pixel
       );
+      setPixels(updatedPixels);
       setBrushColor('#FFFFFF'); // Reset brush color to white
       setIsPainting(false); // Exit painting state
       setTimer(15); // Reset timer to 15 seconds
       setTimerMessage("Draw a pixel in:");
       setSubMessage(`${15} seconds`);
+    }
+  };
+
+  const generateAndSaveImage = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 50;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+
+    pixels.forEach((pixel) => {
+      const x = pixel.id % 50;
+      const y = Math.floor(pixel.id / 50);
+      ctx.fillStyle = pixel.color;
+      ctx.fillRect(x, y, 1, 1);
+    });
+
+    canvas.toBlob((blob) => {
+      const timestamp = new Date().toISOString();
+      const fileName = `pixel-art-${timestamp}.png`;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        localStorage.setItem(fileName, reader.result);
+      };
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const checkAndGenerateImage = () => {
+    const keys = Object.keys(localStorage);
+    const imageKeys = keys.filter(key => key.startsWith('pixel-art-'));
+    if (imageKeys.length > 0) {
+      const latestImageKey = imageKeys.sort().reverse()[0];
+      const latestTimestamp = new Date(latestImageKey.replace('pixel-art-', '').replace('.png', ''));
+      const now = new Date();
+      const oneHour = 60 * 60 * 1000;
+      if (now - latestTimestamp > oneHour) {
+        generateAndSaveImage();
+      }
+    } else {
+      generateAndSaveImage();
     }
   };
 
