@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './pixels.css';
 
-export function Pixels({ signedIn }) {
+export function Pixels({ signedIn, username }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
@@ -28,13 +28,19 @@ export function Pixels({ signedIn }) {
         newPixels.push({
           id: i,
           color: color,
-          borderColor: borderColor
+          borderColor: borderColor,
+          lastChangedBy: null // Initialize with null
         });
       }
       setPixels(newPixels);
       localStorage.setItem('pixels', JSON.stringify(newPixels));
     }
   }, []); // Empty dependency array means this runs once on mount
+
+  // Effect for saving pixels to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem('pixels', JSON.stringify(pixels));
+  }, [pixels]);
 
   // Effect for fetching color of the day and generating color palette
   useEffect(() => {
@@ -132,7 +138,7 @@ export function Pixels({ signedIn }) {
       const borderColor = adjustLightness(brushColor, -40);
       setPixels((prevPixels) =>
         prevPixels.map((pixel) =>
-          pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
+          pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username } : pixel
         )
       );
       setBrushColor('#FFFFFF'); // Reset brush color to white
@@ -140,7 +146,6 @@ export function Pixels({ signedIn }) {
       setTimer(15); // Reset timer to 15 seconds
       setTimerMessage("Draw a pixel in:");
       setSubMessage(`${15} seconds`);
-      localStorage.setItem('pixels', JSON.stringify(pixels));
     }
   };
 
