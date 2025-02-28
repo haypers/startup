@@ -56,7 +56,7 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] **Components** - split into 4, simalar to simon.
 - [x] **Router** - the nav bar works as expected.
 ## 🚀 React part 2: Reactivity
-- [x] **All functionality implemented or mocked out** - I've got all the basic functionality working.  You can make an account, view a static pixel art grid, change a pixel every 15 seconds, and even view an hour by hour history of your pixels in the history tab. I even got some fake 'users' changing pixels, but there is a weird bug with my timer loop, so I've turned it off by default.
+- [x] **All functionality implemented or mocked out** - I've got all the basic functionality working.  You can make an account, view a static pixel art grid, change a pixel every 15 seconds, and even view an hour by hour history of your pixels in the history tab. Because I have no backend yet, I've set the pixel page to check for history 'snapshots' every few minutes. So if you leave your pixels window open for a few minutes when logged in, it will start adding the hour by hour screenshots. I even got some fake 'users' changing pixels, but there is a weird bug with my timer loop, so I've turned it off by default.
 - [x] **Hooks** - Tons of hooks. I use them to change the color pallet, the pixels, the timer, and the notifications. 
 
 ## 🚀 Service deliverable
