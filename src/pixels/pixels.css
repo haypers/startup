@@ -84,6 +84,10 @@
   margin-right: auto;
 }
 
+.Timer{
+  text-align: center;
+}
+
 @media (max-width: 1000px) {
   .UI {
       grid-template-columns: 1fr; 
@@ -109,6 +113,7 @@
       grid-row: 3;
       order: 2;
   }
+
   .grid {
       width: min(90vw, 80vh);
   }

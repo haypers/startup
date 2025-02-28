@@ -5,26 +5,35 @@ export function Pixels({ signedIn }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
-  const [brushColor, setBrushColor] = useState('');
+  const [brushColor, setBrushColor] = useState('#FFFFFF'); // Set initial brush color to white
   const [isPainting, setIsPainting] = useState(false);
+  const [timer, setTimer] = useState(15); // Timer starts at 15 seconds
+  const [timerMessage, setTimerMessage] = useState("Draw a pixel in:");
+  const [subMessage, setSubMessage] = useState(`${timer} seconds`);
 
-  // Effect for generating pixels
+  // Effect for generating or loading pixels
   useEffect(() => {
-    const newPixels = [];
-    for (let i = 0; i < 2500; i++) {
-      const r = Math.floor(Math.random() * 256);
-      const g = Math.floor(Math.random() * 256);
-      const b = Math.floor(Math.random() * 256);
-      const color = rgbToHex(r, g, b);
-      const borderColor = adjustLightness(color, -40);
-      
-      newPixels.push({
-        id: i,
-        color: color,
-        borderColor: borderColor
-      });
+    const savedPixels = localStorage.getItem('pixels');
+    if (savedPixels) {
+      setPixels(JSON.parse(savedPixels));
+    } else {
+      const newPixels = [];
+      for (let i = 0; i < 2500; i++) {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        const color = rgbToHex(r, g, b);
+        const borderColor = adjustLightness(color, -40);
+        
+        newPixels.push({
+          id: i,
+          color: color,
+          borderColor: borderColor
+        });
+      }
+      setPixels(newPixels);
+      localStorage.setItem('pixels', JSON.stringify(newPixels));
     }
-    setPixels(newPixels);
   }, []); // Empty dependency array means this runs once on mount
 
   // Effect for fetching color of the day and generating color palette
@@ -51,6 +60,20 @@ export function Pixels({ signedIn }) {
 
     fetchColorOfDay();
   }, []); // Empty dependency array means this runs once on mount
+
+  // Effect for handling the timer countdown
+  useEffect(() => {
+    if (signedIn && timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer - 1);
+        setSubMessage(`${timer - 1} seconds`);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else if (timer === 0) {
+      setTimerMessage("Draw a Pixel Now");
+      setSubMessage("Select one of the daily colors!");
+    }
+  }, [signedIn, timer]);
 
   const generateColorPalette = (color) => {
     const rgb = hexToRgb(color);
@@ -97,20 +120,27 @@ export function Pixels({ signedIn }) {
   };
 
   const handlePaletteClick = (color) => {
-    setBrushColor(color);
-    setIsPainting(true);
+    if (timer === 0) {
+      setBrushColor(color);
+      setIsPainting(true);
+      setSubMessage("Now, Select A Pixel to Paint!");
+    }
   };
 
   const handlePixelClick = (id) => {
     if (isPainting) {
-const borderColor = adjustLightness(brushColor, -40);
+      const borderColor = adjustLightness(brushColor, -40);
       setPixels((prevPixels) =>
         prevPixels.map((pixel) =>
           pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
         )
       );
-      setBrushColor('#000000'); // Reset brush color to black
+      setBrushColor('#FFFFFF'); // Reset brush color to white
       setIsPainting(false); // Exit painting state
+      setTimer(15); // Reset timer to 15 seconds
+      setTimerMessage("Draw a pixel in:");
+      setSubMessage(`${15} seconds`);
+      localStorage.setItem('pixels', JSON.stringify(pixels));
     }
   };
 
@@ -135,8 +165,8 @@ const borderColor = adjustLightness(brushColor, -40);
                 <div
                   key={index}
                   className="color-box"
-                  style={{ backgroundColor: color }}
-                  onClick={() => handlePaletteClick(color)}
+                  style={{ backgroundColor: color, cursor: timer === 0 ? 'pointer' : 'not-allowed' }}
+                  onClick={() => timer === 0 && handlePaletteClick(color)}
                 ></div>
               ))}
             </div>
@@ -150,12 +180,12 @@ const borderColor = adjustLightness(brushColor, -40);
           </div>
         </section>
 
-        {signedIn && (
+        {signedIn ? (
           <section className="InfoPanel">
             <section className="Timer">
               <div>
-                <h3>Draw A pixel in:</h3>
-                <p>24 seconds</p>
+                <h3>{timerMessage}</h3>
+                <p>{subMessage}</p>
               </div>
             </section>
 
@@ -170,6 +200,11 @@ const borderColor = adjustLightness(brushColor, -40);
                 </ul>
               </div>
             </section>
+          </section>
+        ) : (
+          <section className="InfoPanel">
+            <h3>Log in to help build pixel art!</h3>
+            <p>Users with accounts can change one of these pixels every 15 seconds!</p>
           </section>
         )}
 
