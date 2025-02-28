@@ -95,6 +95,37 @@ export function Pixels({ signedIn }) {
     return () => clearInterval(interval);
   }, [pixels]);
 
+  // Effect for simulating fake user changes, but it's super buggy
+  /*
+  setInterval(() => {
+    // This will be replaced with WebSocket messages
+
+    if (signedIn) {
+
+      const logContainer = document.querySelector('.Notifications ul');
+      const randomPixelIndex = Math.floor(Math.random() * 2500);
+      const randomColorIndex = Math.floor(Math.random() * 5);
+      const randomColor = colorPalette[randomColorIndex];
+      const randomPixel = pixels[randomPixelIndex];
+      const previousLastChangedBy = randomPixel.lastChangedBy;
+
+      const updatedPixels = pixels.map((pixel) =>
+        pixel.id === randomPixel.id ? { ...pixel, color: randomColor, borderColor: adjustLightness(randomColor, -40), lastChangedBy: 'Testuser' } : pixel
+      );
+
+      setPixels(updatedPixels);
+
+      const logMessage = document.createElement('p');
+      if (previousLastChangedBy === username) {
+        logMessage.textContent = `Testuser destroyed your pixel at (${randomPixel.id % 50}, ${Math.floor(randomPixel.id / 50)})`;
+      } else {
+        logMessage.textContent = `Testuser changed a pixel at (${randomPixel.id % 50}, ${Math.floor(randomPixel.id / 50)})`;
+      }
+      logContainer.appendChild(logMessage);
+    }
+  }, 1000);*/
+  
+
   const generateColorPalette = (color) => {
     const rgb = hexToRgb(color);
     const washedOut = rgbToHex(
@@ -251,12 +282,7 @@ export function Pixels({ signedIn }) {
             <section className="Notifications">
               <div>
                 <h3>Notifications:</h3>
-                <ul>
-                  <li>Bob destroyed your pixel at 23, BD</li>
-                  <li>Gusgus destroyed your pixel at 22, BH</li>
-                  <li>Sarah followed your plan at pixel 32, BC</li>
-                  <li>Norman ignored your plan at pixel 25, BA</li>
-                </ul>
+                <ul></ul>
               </div>
             </section>
           </section>

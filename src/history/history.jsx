@@ -13,6 +13,10 @@ export function History() {
       const imageData = localStorage.getItem(key);
       return { date, imageData };
     });
+
+    // Sort imageEntries by date in descending order
+    imageEntries.sort((a, b) => b.date - a.date);
+
     setImages(imageEntries);
   }, []);
 
