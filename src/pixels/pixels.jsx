@@ -46,7 +46,7 @@ export function Pixels({ signedIn, username }) {
   useEffect(() => {
     const fetchColorOfDay = async () => {
       const today = new Date().toISOString().split('T')[0];
-      try {
+      try { //sometimes this fetch fails, so when we move to backed design, let's have the server provide backup colors, and only ever have the backend make this call.
         const response = await fetch(
           `https://api.allorigins.win/get?url=${encodeURIComponent(
             `http://colors.zoodinkers.com/api`
@@ -145,8 +145,9 @@ export function Pixels({ signedIn, username }) {
     if (isPainting) {
       const borderColor = adjustLightness(brushColor, -40);
       const updatedPixels = pixels.map((pixel) =>
-        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username } : pixel
+        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username || pixel.lastChangedBy } : pixel
       );
+      console.log(username);
       setPixels(updatedPixels);
       setBrushColor('#FFFFFF'); // Reset brush color to white
       setIsPainting(false); // Exit painting state
