@@ -282,7 +282,9 @@ export function Pixels({ signedIn }) {
             <section className="Notifications">
               <div>
                 <h3>Notifications:</h3>
-                <ul></ul>
+                <ul>
+                  <li>I've got a timer built to simulate Notifications here, but it is super buggy, so I dissabled it by default for now.</li>
+                </ul>
               </div>
             </section>
           </section>
