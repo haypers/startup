@@ -12,6 +12,8 @@ export function Signin({ onAuthChange }) {
     const users = JSON.parse(localStorage.getItem('users')) || {};
     if (users[email] && users[email] === password) {
       // User exists and password matches
+      localStorage.setItem('authState', 'Authenticated');
+      localStorage.setItem('username', email);
       onAuthChange(email, 'Authenticated');
       navigate('/');
     } else {
@@ -26,6 +28,8 @@ export function Signin({ onAuthChange }) {
     } else {
       users[email] = password;
       localStorage.setItem('users', JSON.stringify(users));
+      localStorage.setItem('authState', 'Authenticated');
+      localStorage.setItem('username', email);
       onAuthChange(email, 'Authenticated');
       navigate('/');
     }

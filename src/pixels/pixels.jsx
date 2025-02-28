@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './pixels.css';
 
-export function Pixels({ signedIn, username }) {
+export function Pixels({ signedIn }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
@@ -10,6 +10,12 @@ export function Pixels({ signedIn, username }) {
   const [timer, setTimer] = useState(15); // Timer starts at 15 seconds
   const [timerMessage, setTimerMessage] = useState("Draw a pixel in:");
   const [subMessage, setSubMessage] = useState(`${timer} seconds`);
+  const username = localStorage.getItem('username'); // Retrieve username from local storage
+
+  // Log the username to check if it is being retrieved correctly
+  useEffect(() => {
+    console.log('Username:', username);
+  }, [username]);
 
   // Effect for generating or loading pixels
   useEffect(() => {
@@ -147,7 +153,7 @@ export function Pixels({ signedIn, username }) {
       const updatedPixels = pixels.map((pixel) =>
         pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username || pixel.lastChangedBy } : pixel
       );
-      console.log(username);
+      console.log('Updated Pixels:', updatedPixels);
       setPixels(updatedPixels);
       setBrushColor('#FFFFFF'); // Reset brush color to white
       setIsPainting(false); // Exit painting state
