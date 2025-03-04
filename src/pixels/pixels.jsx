@@ -279,6 +279,10 @@ export function Pixels({ signedIn }) {
               </div>
             </section>
 
+            <div style={{ textAlign: 'center', margin: '20px 0' }}>
+              <button className="btn btn-primary">Enter Planning Mode</button>
+            </div>
+
             <section className="Notifications">
               <div>
                 <h3>Notifications:</h3>
@@ -287,6 +291,7 @@ export function Pixels({ signedIn }) {
                 </ul>
               </div>
             </section>
+            
           </section>
         ) : (
           <section className="InfoPanel">
