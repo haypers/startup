@@ -1,3 +1,25 @@
+.header-links {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-links a {
+  margin: 0 10px;
+}
+
+@media (max-width: 600px) {
+  .header-links {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-links a {
+    margin: 5px 0;
+  }
+}
+
+
 .body {
   display: flex;
   flex-direction: column;
@@ -25,6 +47,7 @@
 }
 
 .grid {
+  position: relative;
   padding-top: 20px;
   display: grid;
   grid-template-columns: repeat(50, 1fr);
@@ -32,7 +55,23 @@
 }
 
 .pixel {
+  position: relative;
   aspect-ratio: 1 / 1;
+  z-index: 2;
+}
+
+.grid.planning-mode .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.grid.planning-mode .pixel { /*while in planning mode */
+  filter: brightness(50%) saturate(50%);
 }
 
 .pixel:hover {
@@ -82,6 +121,14 @@
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+}
+
+.btn { /*planning button */
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px;
 }
 
 .Timer{

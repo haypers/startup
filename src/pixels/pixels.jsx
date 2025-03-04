@@ -10,6 +10,7 @@ export function Pixels({ signedIn }) {
   const [timer, setTimer] = useState(15); // Timer starts at 15 seconds
   const [timerMessage, setTimerMessage] = useState("Draw a pixel in:");
   const [subMessage, setSubMessage] = useState(`${timer} seconds`);
+  const [isPlanningMode, setIsPlanningMode] = useState(false); // New state for planning mode
   const username = localStorage.getItem('username'); // Retrieve username from local storage
 
   // Log the username to check if it is being retrieved correctly
@@ -234,6 +235,10 @@ export function Pixels({ signedIn }) {
     }
   };
 
+  const togglePlanningMode = () => {
+    setIsPlanningMode((prevMode) => !prevMode);
+  };
+
   return (
     <main className="container-fluid bg-secondary text-center">
       <div className="UI">
@@ -280,7 +285,13 @@ export function Pixels({ signedIn }) {
             </section>
 
             <div style={{ textAlign: 'center', margin: '20px 0' }}>
-              <button className="btn btn-primary">Enter Planning Mode</button>
+              <button
+                className="btn"
+                style={{ backgroundColor: isPlanningMode ? 'red' : 'blue', color: 'white' }}
+                onClick={togglePlanningMode}
+              >
+                {isPlanningMode ? 'Exit Planning Mode' : 'Enter Planning Mode'}
+              </button>
             </div>
 
             <section className="Notifications">
@@ -301,7 +312,8 @@ export function Pixels({ signedIn }) {
         )}
 
         <section className="art-container">
-          <div className="grid">
+          <div className={`grid ${isPlanningMode ? 'planning-mode' : ''}`}>
+            {isPlanningMode && <div className="overlay"></div>}
             {pixels.map((pixel) => (
               <div
                 key={pixel.id}
