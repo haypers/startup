@@ -52,17 +52,12 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] **Application elements** - You'll notice that the color pallets move to a horizontal allignment under the art if the screen becomes narrow, and they scale to match the width of the screen in that case.
 - [x] **Application text content** - The text is in 2 sections, each set to a fixed width of 250 px. I need to add some scaling, but I'm afraid to get my heart set on any sizeing untill I have some JS modifying the text so I know how long the words will be.
 - [x] **Application images** - I got the grid scaling well, and a little brush icon by the colors.
-## 🚀 React part 1: Routing deliverable
 - [x] **Bundled using Vite** - and deployed.
 - [x] **Components** - split into 4, simalar to simon.
 - [x] **Router** - the nav bar works as expected.
-
 ## 🚀 React part 2: Reactivity
-
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **All functionality implemented or mocked out** - I did not complete this part of the deliverable.
-- [ ] **Hooks** - I did not complete this part of the deliverable.
+- [x] **All functionality implemented or mocked out** - I've got all the basic functionality working.  You can make an account, view a static pixel art grid, change a pixel every 15 seconds, and even view an hour by hour history of your pixels in the history tab. Because I have no backend yet, I've set the pixel page to check for history 'snapshots' every few minutes. So if you leave your pixels window open for a few minutes when logged in, it will start adding the hour by hour screenshots. I even got some fake 'users' changing pixels, but there is a weird bug with my timer loop, so I've turned it off by default.
+- [x] **Hooks** - Tons of hooks. I use them to change the color pallet, the pixels, the timer, and the notifications. 
 
 ## 🚀 Service deliverable
 
