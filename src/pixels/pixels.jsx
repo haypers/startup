@@ -313,11 +313,10 @@ export function Pixels({ signedIn }) {
 
         <section className="art-container">
           <div className={`grid ${isPlanningMode ? 'planning-mode' : ''}`}>
-            {isPlanningMode && <div className="overlay"></div>}
             {pixels.map((pixel) => (
               <div
                 key={pixel.id}
-                className="pixel"
+                className={`pixel ${isPlanningMode ? 'dimmed' : ''}`}
                 style={{
                   backgroundColor: pixel.color,
                   border: `1px solid ${pixel.borderColor}`,
