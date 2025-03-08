@@ -76,7 +76,10 @@ export function Pixels({ signedIn }) {
 
   // Effect for handling the timer countdown
   useEffect(() => {
-    if (signedIn && timer > 0) {
+    if (isPlanningMode) {
+      setTimerMessage("You're in planning mode");
+      setSubMessage("Change up to 30 pixels that other players can choose to help you paint!");
+    } else if (signedIn && timer > 0) {
       const interval = setInterval(() => {
         setTimer((prevTimer) => prevTimer - 1);
         setSubMessage(`${timer - 1} seconds`);
@@ -86,7 +89,7 @@ export function Pixels({ signedIn }) {
       setTimerMessage("Draw a Pixel Now");
       setSubMessage("Select one of the daily colors!");
     }
-  }, [signedIn, timer]);
+  }, [signedIn, timer, isPlanningMode]);
 
   // Effect for checking and generating image every minute
   useEffect(() => {
