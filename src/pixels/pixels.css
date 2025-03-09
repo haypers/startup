@@ -77,6 +77,16 @@
   gap: 10px; 
 }
 
+.brush-icon{
+  stroke: none;
+  stroke-width: 0px;
+}
+
+.brush-icon.selected {
+  stroke: grey;
+  stroke-width: 60px;
+}
+
 .Colors {
   grid-column: 3; 
   align-self: start;

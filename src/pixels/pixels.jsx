@@ -12,11 +12,25 @@ export function Pixels({ signedIn }) {
   const [subMessage, setSubMessage] = useState(`${timer} seconds`);
   const [isPlanningMode, setIsPlanningMode] = useState(false); // New state for planning mode
   const username = localStorage.getItem('username'); // Retrieve username from local storage
+  const [plannedPixels, setPlannedPixels] = useState([]);
 
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
     console.log('Username:', username);
   }, [username]);
+
+  useEffect(() => {
+    if (signedIn && username) {
+      const savedPlannedPixels = localStorage.getItem(`${username}-planned`);
+      if (savedPlannedPixels) {
+        // If the array exists, parse it and set it to plannedPixels
+        setPlannedPixels(JSON.parse(savedPlannedPixels));
+      } else {
+        // If the array doesn't exist, create an empty array and save it to localStorage
+        localStorage.setItem(`${username}-planned`, JSON.stringify([]));
+      }
+    }
+  }, [signedIn, username]);
 
   // Effect for generating or loading pixels
   useEffect(() => {
@@ -97,38 +111,7 @@ export function Pixels({ signedIn }) {
       checkAndGenerateImage();
     }, 60000); // 60000 ms = 1 minute
     return () => clearInterval(interval);
-  }, [pixels]);
-
-  // Effect for simulating fake user changes, but it's super buggy
-  /*
-  setInterval(() => {
-    // This will be replaced with WebSocket messages
-
-    if (signedIn) {
-
-      const logContainer = document.querySelector('.Notifications ul');
-      const randomPixelIndex = Math.floor(Math.random() * 2500);
-      const randomColorIndex = Math.floor(Math.random() * 5);
-      const randomColor = colorPalette[randomColorIndex];
-      const randomPixel = pixels[randomPixelIndex];
-      const previousLastChangedBy = randomPixel.lastChangedBy;
-
-      const updatedPixels = pixels.map((pixel) =>
-        pixel.id === randomPixel.id ? { ...pixel, color: randomColor, borderColor: adjustLightness(randomColor, -40), lastChangedBy: 'Testuser' } : pixel
-      );
-
-      setPixels(updatedPixels);
-
-      const logMessage = document.createElement('p');
-      if (previousLastChangedBy === username) {
-        logMessage.textContent = `Testuser destroyed your pixel at (${randomPixel.id % 50}, ${Math.floor(randomPixel.id / 50)})`;
-      } else {
-        logMessage.textContent = `Testuser changed a pixel at (${randomPixel.id % 50}, ${Math.floor(randomPixel.id / 50)})`;
-      }
-      logContainer.appendChild(logMessage);
-    }
-  }, 1000);*/
-  
+  }, [pixels]);  
 
   const generateColorPalette = (color) => {
     const rgb = hexToRgb(color);
@@ -175,15 +158,23 @@ export function Pixels({ signedIn }) {
   };
 
   const handlePaletteClick = (color) => {
-    if (timer === 0) {
+    if (isPlanningMode || timer === 0) {
       setBrushColor(color);
       setIsPainting(true);
       setSubMessage("Now, Select A Pixel to Paint!");
+      document.querySelector('.brush-icon').classList.add('selected');
     }
   };
 
   const handlePixelClick = (id) => {
-    if (isPainting) {
+    if (isPlanningMode) {
+      const borderColor = adjustLightness(brushColor, -40);
+      const updatedPlannedPixels = plannedPixels.map((pixel) =>
+        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
+      );
+      console.log('Updated Pixels in Planning Mode:', updatedPlannedPixels);
+      setPlannedPixels(updatedPlannedPixels);
+    } else if (isPainting) {
       const borderColor = adjustLightness(brushColor, -40);
       const updatedPixels = pixels.map((pixel) =>
         pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username || pixel.lastChangedBy } : pixel
@@ -191,6 +182,7 @@ export function Pixels({ signedIn }) {
       console.log('Updated Pixels:', updatedPixels);
       setPixels(updatedPixels);
       setBrushColor('#FFFFFF'); // Reset brush color to white
+      document.querySelector('.brush-icon').classList.remove('selected');
       setIsPainting(false); // Exit painting state
       setTimer(15); // Reset timer to 15 seconds
       setTimerMessage("Draw a pixel in:");
@@ -263,8 +255,8 @@ export function Pixels({ signedIn }) {
                 <div
                   key={index}
                   className="color-box"
-                  style={{ backgroundColor: color, cursor: timer === 0 ? 'pointer' : 'not-allowed' }}
-                  onClick={() => timer === 0 && handlePaletteClick(color)}
+                  style={{ backgroundColor: color, cursor: isPlanningMode || timer === 0 ? 'pointer' : 'not-allowed' }}
+                  onClick={() => (isPlanningMode || timer === 0) && handlePaletteClick(color)}
                 ></div>
               ))}
             </div>
