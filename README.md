@@ -55,19 +55,16 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] **Bundled using Vite** - and deployed.
 - [x] **Components** - split into 4, simalar to simon.
 - [x] **Router** - the nav bar works as expected.
-## 🚀 React part 2: Reactivity
 - [x] **All functionality implemented or mocked out** - I've got all the basic functionality working.  You can make an account, view a static pixel art grid, change a pixel every 15 seconds, and even view an hour by hour history of your pixels in the history tab. Because I have no backend yet, I've set the pixel page to check for history 'snapshots' every few minutes. So if you leave your pixels window open for a few minutes when logged in, it will start adding the hour by hour screenshots. I even got some fake 'users' changing pixels, but there is a weird bug with my timer loop, so I've turned it off by default.
 - [x] **Hooks** - Tons of hooks. I use them to change the color pallet, the pixels, the timer, and the notifications. 
-
 ## 🚀 Service deliverable
+- [x] **Node.js/Express HTTP service** - running.
+- [x] **Static middleware for frontend** - All of my pages are rendering correctly from the server.
+- [x] **Calls to third party endpoints** - The colors of the day come from a 3rd party.
+- [x] **Backend service endpoints** - I can now call a put to update the pixel records on the server side. I also now keep user records on the server side. (non password hashed, I'll do that in the DB phase.)
+- [x] **Frontend calls service endpoints** - The user can now log in, or sign up, change pixels, and more, all by sending endpoint requests.
 
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **Node.js/Express HTTP service** - I did not complete this part of the deliverable.
-- [ ] **Static middleware for frontend** - I did not complete this part of the deliverable.
-- [ ] **Calls to third party endpoints** - I did not complete this part of the deliverable.
-- [ ] **Backend service endpoints** - I did not complete this part of the deliverable.
-- [ ] **Frontend calls service endpoints** - I did not complete this part of the deliverable.
+NOTE: the planning feature is new, and not done yet. And I'm still trying to get my server to save the history images. I'm close, but that will take a little more reaserch.
 
 ## 🚀 DB/Login deliverable
 

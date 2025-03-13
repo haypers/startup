@@ -2,7 +2,7 @@
 
 [My startup](https://startup.haypers.com)
 
-Ready to go!
+
 
 ## Helpful links
 
@@ -24,3 +24,5 @@ For the html project, I don't know how to represent the popup that lets you see 
 But I've got the main navigation working.
 
 I think my first step will be to get css organising the screen correctly, and rendering a grid on mobile. That might be difficult.
+
+So I need to learn how to debug the array data on the server side to get the images saving on the server side to work.
