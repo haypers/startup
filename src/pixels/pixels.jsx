@@ -13,6 +13,7 @@ export function Pixels({ signedIn }) {
   const [isPlanningMode, setIsPlanningMode] = useState(false); // New state for planning mode
   const username = localStorage.getItem('username'); // Retrieve username from local storage
   const [plannedPixels, setPlannedPixels] = useState([]);
+  
 
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
@@ -169,11 +170,25 @@ export function Pixels({ signedIn }) {
   const handlePixelClick = (id) => {
     if (isPlanningMode) {
       const borderColor = adjustLightness(brushColor, -40);
-      const updatedPlannedPixels = plannedPixels.map((pixel) =>
+      let updatedPlannedPixels = plannedPixels.map((pixel) =>
         pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
       );
+
+      // If the pixel is not already in the plannedPixels array, add it
+      if (!updatedPlannedPixels.some(pixel => pixel.id === id)) {
+        updatedPlannedPixels.push({ id, color: brushColor, borderColor });
+      }
+
+      // Ensure the array does not exceed 30 items
+      if (updatedPlannedPixels.length > 30) {
+        updatedPlannedPixels.shift(); // Remove the first item
+      }
+
       console.log('Updated Pixels in Planning Mode:', updatedPlannedPixels);
       setPlannedPixels(updatedPlannedPixels);
+
+      // Save the updated planned pixels to local storage
+      localStorage.setItem(`${username}-planned`, JSON.stringify(updatedPlannedPixels));
     } else if (isPainting) {
       const borderColor = adjustLightness(brushColor, -40);
       const updatedPixels = pixels.map((pixel) =>
@@ -231,7 +246,22 @@ export function Pixels({ signedIn }) {
   };
 
   const togglePlanningMode = () => {
-    setIsPlanningMode((prevMode) => !prevMode);
+    setIsPlanningMode((prevMode) => {
+      if (prevMode) {
+        setTimerMessage("Draw a pixel in:");
+        setSubMessage(`${timer} seconds`);
+        setBrushColor('#FFFFFF'); // Reset brush color to white
+        document.querySelector('.brush-icon').classList.remove('selected');
+        setIsPainting(false); // Exit painting state
+      } else {
+        setBrushColor('#FFFFFF'); // Reset brush color to white
+        document.querySelector('.brush-icon').classList.remove('selected');
+        setIsPainting(false); // Exit painting state
+        setTimerMessage("You're in planning mode");
+        setSubMessage("Change up to 30 pixels that other players can choose to help you paint!");
+      }
+      return !prevMode;
+    });
   };
 
   return (

@@ -61,7 +61,7 @@
 }
 
 .grid.planning-mode .pixel.dimmed { /*while in planning mode */
-  filter: brightness(50%) saturate(50%);
+  opacity: 0.5;
 }
 
 .pixel:hover {
