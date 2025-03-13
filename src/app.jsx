@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
-import { Signin, logoutUser } from './signin/signin'; // Import the logout function
+import { Signin, logoutUser, checkAuthStatus } from './signin/signin'; // Import the checkAuthStatus function
 import { Pixels } from './pixels/pixels';
 import { History } from './history/history';
 import { About } from './about/about';
@@ -14,8 +14,22 @@ const AuthState = {
 };
 
 export default function App() {
-  const [authState, setAuthState] = useState(AuthState.Unauthenticated);
+  const [authState, setAuthState] = useState(AuthState.Unknown);
   const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const userName = await checkAuthStatus();
+      if (userName) {
+        setAuthState(AuthState.Authenticated);
+        setUserName(userName);
+      } else {
+        setAuthState(AuthState.Unauthenticated);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const handleAuthChange = (userName, authState) => {
     setAuthState(authState);
@@ -41,11 +55,6 @@ export default function App() {
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink className="nav-link" to="signin">
-                  {authState === AuthState.Authenticated ? 'Account' : 'Sign In'}
-                </NavLink>
-              </li>
-              <li className="nav-item">
                 <NavLink className="nav-link" to="about">
                   About
                 </NavLink>
@@ -55,13 +64,24 @@ export default function App() {
                   Art History
                 </NavLink>
               </li>
-              {authState === AuthState.Authenticated && (
-                <li className="nav-item">
-                  <button className="nav-link btn btn-link" onClick={handleLogout}>
+              <li className="nav-item">
+                {authState === AuthState.Authenticated ? (
+                  <NavLink
+                    className="nav-link"
+                    to=""
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleLogout();
+                    }}
+                  >
                     Logout
-                  </button>
-                </li>
-              )}
+                  </NavLink>
+                ) : (
+                  <NavLink className="nav-link" to="signin">
+                    Sign In
+                  </NavLink>
+                )}
+              </li>
             </ul>
           </nav>
         </header>

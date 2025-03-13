@@ -10,6 +10,24 @@ export async function logoutUser() {
   localStorage.removeItem('username');
 }
 
+export async function checkAuthStatus() {
+  const response = await fetch('/api/auth/status', {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    localStorage.setItem('authState', 'Authenticated');
+    localStorage.setItem('username', data.email);
+    return data.email;
+  } else {
+    localStorage.removeItem('authState');
+    localStorage.removeItem('username');
+    return null;
+  }
+}
+
 export function Signin({ onAuthChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
