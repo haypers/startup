@@ -2,36 +2,77 @@ import React, { useState } from 'react';
 import './signin.css';
 import { useNavigate } from 'react-router-dom';
 
+export async function logoutUser() {
+  await fetch('/api/auth/logout', {
+    method: 'DELETE',
+  });
+  localStorage.removeItem('authState');
+  localStorage.removeItem('username');
+}
+
 export function Signin({ onAuthChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[email] && users[email] === password) {
-      // User exists and password matches
+  const registerUser = async (email, password) => {
+    const response = await fetch('/api/auth/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
       localStorage.setItem('authState', 'Authenticated');
-      localStorage.setItem('username', email);
-      onAuthChange(email, 'Authenticated');
-      navigate('/');
+      localStorage.setItem('username', data.email);
+      return data.email;
     } else {
-      alert('Invalid credentials');
+      const error = await response.json();
+      throw new Error(error.msg);
     }
   };
 
-  const handleSignUp = () => {
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[email]) {
-      alert('User already exists');
-    } else {
-      users[email] = password;
-      localStorage.setItem('users', JSON.stringify(users));
+  const loginUser = async (email, password) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
       localStorage.setItem('authState', 'Authenticated');
-      localStorage.setItem('username', email);
-      onAuthChange(email, 'Authenticated');
+      localStorage.setItem('username', data.email);
+      return data.email;
+    } else {
+      const error = await response.json();
+      throw new Error(error.msg);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const userName = await loginUser(email, password);
+      onAuthChange(userName, 'Authenticated');
       navigate('/');
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleSignUp = async () => {
+    try {
+      const userName = await registerUser(email, password);
+      onAuthChange(userName, 'Authenticated');
+      navigate('/');
+    } catch (error) {
+      alert(error.message);
     }
   };
 
