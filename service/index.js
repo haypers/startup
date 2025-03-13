@@ -83,6 +83,47 @@ const verifyAuth = async (req, res, next) => {
   }
 };
 
+let pixels = []; // Store the pixel grid on the server
+
+// Fetch or initialize pixels
+apiRouter.get('/pixels', (req, res) => {
+  if (pixels.length === 0) {
+    // Generate a 50x50 grid of pixels
+    for (let i = 0; i < 2500; i++) {
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      const color = rgbToHex(r, g, b);
+      const borderColor = adjustLightness(color, -40);
+
+      pixels.push({
+        id: i,
+        color: color,
+        borderColor: borderColor,
+        lastChangedBy: null, // No user has changed this pixel yet
+      });
+    }
+  }
+  res.send(pixels);
+});
+
+apiRouter.put('/pixels/:id', verifyAuth, (req, res) => {
+  const pixelId = parseInt(req.params.id);
+  const { color, borderColor } = req.body;
+
+  const pixel = pixels.find((p) => p.id === pixelId);
+  if (!pixel) {
+    return res.status(404).send({ msg: 'Pixel not found' });
+  }
+
+  // Update the pixel state
+  pixel.color = color;
+  pixel.borderColor = borderColor;
+  pixel.lastChangedBy = req.cookies[authCookieName]; // Track who changed it
+
+  res.status(200).send(pixel); // Respond with the updated pixel
+});
+
 // Default error handler
 app.use(function (err, req, res, next) {
   res.status(500).send({ type: err.name, message: err.message });
@@ -119,6 +160,18 @@ function setAuthCookie(res, authToken) {
     httpOnly: true,
     sameSite: 'strict',
   });
+}
+
+function rgbToHex(r, g, b) {
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+function adjustLightness(color, amount) {
+  const num = parseInt(color.slice(1), 16);
+  const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amount));
+  const b = Math.min(255, Math.max(0, (num & 0x0000ff) + amount));
+  return rgbToHex(r, g, b);
 }
 
 app.listen(port, () => {

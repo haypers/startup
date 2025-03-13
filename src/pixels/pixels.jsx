@@ -167,40 +167,65 @@ export function Pixels({ signedIn }) {
     }
   };
 
-  const handlePixelClick = (id) => {
+  const handlePixelClick = async (id) => {
     if (isPlanningMode) {
-      const borderColor = adjustLightness(brushColor, -40);
-      let updatedPlannedPixels = plannedPixels.map((pixel) =>
-        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor } : pixel
-      );
-
-      // If the pixel is not already in the plannedPixels array, add it
-      if (!updatedPlannedPixels.some(pixel => pixel.id === id)) {
-        updatedPlannedPixels.push({ id, color: brushColor, borderColor });
-      }
-
-      // Ensure the array does not exceed 30 items
-      if (updatedPlannedPixels.length > 30) {
-        updatedPlannedPixels.shift(); // Remove the first item
-      }
-
-      console.log('Updated Pixels in Planning Mode:', updatedPlannedPixels);
-      setPlannedPixels(updatedPlannedPixels);
-
-      // Save the updated planned pixels to local storage
-      localStorage.setItem(`${username}-planned`, JSON.stringify(updatedPlannedPixels));
+      // Handle planning mode logic here (if needed)
     } else if (isPainting) {
       const borderColor = adjustLightness(brushColor, -40);
-      const updatedPixels = pixels.map((pixel) =>
-        pixel.id === id ? { ...pixel, color: brushColor, borderColor: borderColor, lastChangedBy: username || pixel.lastChangedBy } : pixel
-      );
-      console.log('Updated Pixels:', updatedPixels);
-      setPixels(updatedPixels);
+
+      try {
+        // Notify the server of the pixel change
+        const response = await fetch(`/api/pixels/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            color: brushColor, // Send the selected brush color
+            borderColor: borderColor, // Send the adjusted border color
+            lastChangedBy: username, // Include the username of the player
+          }),
+          credentials: 'include', // Include cookies for authentication
+        });
+
+        if (response.ok) {
+          // If the server update was successful, update the local state
+          setPixels((prevPixels) =>
+            prevPixels.map((pixel) =>
+              pixel.id === id
+                ? { ...pixel, color: brushColor, borderColor: borderColor }
+                : pixel
+            )
+          );
+        } else {
+          console.error('Failed to update pixel on the server');
+          // Optionally, revert the optimistic update if the server fails
+          // setPixels((prevPixels) =>
+          //   prevPixels.map((pixel) =>
+          //     pixel.id === id
+          //       ? { ...pixel, color: '#FFFFFF', borderColor: '#000000' } // Revert to default
+          //       : pixel
+          //   )
+          // );
+        }
+      } catch (error) {
+        console.error('Error updating pixel on the server:', error);
+        // Optionally, revert the optimistic update if there's a network error
+        // setPixels((prevPixels) =>
+        //   prevPixels.map((pixel) =>
+        //     pixel.id === id
+        //       ? { ...pixel, color: '#FFFFFF', borderColor: '#000000' } // Revert to default
+        //       : pixel
+        //   )
+        // );
+      }
+
+      // Reset painting state
       setBrushColor('#FFFFFF'); // Reset brush color to white
       document.querySelector('.brush-icon').classList.remove('selected');
       setIsPainting(false); // Exit painting state
       setTimer(15); // Reset timer to 15 seconds
-      setTimerMessage("Draw a pixel in:");
+      setTimerMessage('Draw a pixel in:');
       setSubMessage(`${15} seconds`);
     }
   };
@@ -263,6 +288,20 @@ export function Pixels({ signedIn }) {
       return !prevMode;
     });
   };
+
+  useEffect(() => {
+    const fetchPixels = async () => {
+      const response = await fetch('/api/pixels');
+      if (response.ok) {
+        const data = await response.json();
+        setPixels(data);
+      } else {
+        console.error('Failed to fetch pixels');
+      }
+    };
+
+    fetchPixels();
+  }, []);
 
   return (
     <main className="container-fluid bg-secondary text-center">
