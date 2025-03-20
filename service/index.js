@@ -2,6 +2,9 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const express = require('express');
 const uuid = require('uuid');
+const { createCanvas } = require('canvas');
+const fs = require('fs-extra');
+const path = require('path');
 const app = express();
 
 //using simon code
@@ -269,6 +272,108 @@ fetchColorOfTheDay().then(() => {
 
 // Set up timer to check for color updates every 30 minutes
 setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
+
+// Function to generate and save image
+async function generateAndSaveImage() {
+  try {
+    // Create a canvas (50x50 pixels)
+    const canvas = createCanvas(50, 50);
+    const ctx = canvas.getContext('2d');
+
+    // Draw each pixel onto the canvas
+    pixels.forEach((pixel) => {
+      const x = pixel.id % 50;
+      const y = Math.floor(pixel.id / 50);
+      ctx.fillStyle = pixel.color;
+      ctx.fillRect(x, y, 1, 1);
+    });
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString();
+    const fileName = `pixel-art-${timestamp}.png`;
+    const filePath = path.join(imageDir, fileName);
+
+    // Save the image as a PNG
+    const buffer = canvas.toBuffer('image/png');
+    fs.writeFileSync(filePath, buffer);
+    
+    console.log(`Generated image: ${fileName}`);
+
+    // Prune old images (optional - keep last 50 images)
+    pruneOldImages(50);
+  } catch (error) {
+    console.error('Error generating image:', error);
+  }
+}
+
+// Function to prune old images, keeping only the specified number of most recent ones
+function pruneOldImages(keepCount) {
+  try {
+    const files = fs.readdirSync(imageDir)
+      .filter(file => file.startsWith('pixel-art-'))
+      .sort()
+      .reverse();
+    
+    if (files.length > keepCount) {
+      files.slice(keepCount).forEach(file => {
+        fs.unlinkSync(path.join(imageDir, file));
+        console.log(`Deleted old image: ${file}`);
+      });
+    }
+  } catch (error) {
+    console.error('Error pruning old images:', error);
+  }
+}
+
+// Create image directory if it doesn't exist
+const imageDir = path.join(__dirname, 'images');
+fs.ensureDirSync(imageDir);
+
+// Initialize image generation on server start
+generateAndSaveImage();
+
+// Set up timer to generate images every 5 minutes
+const FIVE_MINUTES = 5 * 60 * 1000;
+setInterval(generateAndSaveImage, FIVE_MINUTES);
+
+// Endpoint to get list of all saved images
+apiRouter.get('/images', (req, res) => {
+  try {
+    const files = fs.readdirSync(imageDir)
+      .filter(file => file.startsWith('pixel-art-'))
+      .map(file => {
+        const timestamp = file.replace('pixel-art-', '').replace('.png', '');
+        return {
+          filename: file,
+          timestamp: timestamp,
+          url: `/api/images/${file}`
+        };
+      })
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    res.json(files);
+  } catch (error) {
+    console.error('Error getting image list:', error);
+    res.status(500).send({ msg: 'Failed to get image list' });
+  }
+});
+
+// Endpoint to get a specific image by filename
+apiRouter.get('/images/:filename', (req, res) => {
+  try {
+    const filePath = path.join(imageDir, req.params.filename);
+    
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'image/png');
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send({ msg: 'Image not found' });
+    }
+  } catch (error) {
+    console.error('Error serving image:', error);
+    res.status(500).send({ msg: 'Failed to serve image' });
+  }
+});
 
 // Default error handler
 app.use(function (err, req, res, next) {

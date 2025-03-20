@@ -1,41 +1,66 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './history.css';
 
 export function History() {
   const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const keys = Object.keys(localStorage);
-    const imageKeys = keys.filter(key => key.startsWith('pixel-art-'));
-    const imageEntries = imageKeys.map(key => {
-      const timestamp = key.replace('pixel-art-', '').replace('.png', '');
-      const date = new Date(timestamp);
-      const imageData = localStorage.getItem(key);
-      return { date, imageData };
-    });
+    const fetchImages = async () => {
+      try {
+        const response = await fetch('/api/images');
+        if (response.ok) {
+          const data = await response.json();
+          setImages(data);
+        } else {
+          console.error('Failed to fetch images');
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+        setLoading(false);
+      }
+    };
 
-    // Sort imageEntries by date in descending order
-    imageEntries.sort((a, b) => b.date - a.date);
-
-    setImages(imageEntries);
+    fetchImages();
   }, []);
+
+  const formatDate = (timestamp) => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    } catch (e) {
+      return 'Unknown date';
+    }
+  };
 
   return (
     <main className="container-fluid bg-secondary text-center">
-      {images.length === 0 ? (
-        <p>No history saved yet</p>
-      ) : (
-        images.map((image, index) => (
-          <div key={index} className="image-container">
-            <h3>{image.date.toLocaleString()}</h3>
-            <img
-              src={image.imageData}
-              alt={`Pixel art from ${image.date.toLocaleString()}`}
-              className="pixel-art-image"
-            />
+      <div className="history-page">
+        <h1>Pixel Art History</h1>
+        <p>See how our community artwork has evolved over time!</p>
+        
+        {loading ? (
+          <div className="loading">Loading image history...</div>
+        ) : images.length === 0 ? (
+          <div className="no-images">No historical images available yet.</div>
+        ) : (
+          <div className="image-timeline">
+            {images.map((image, index) => (
+              <div key={index} className="timeline-item">
+                <div className="timestamp">{formatDate(image.timestamp)}</div>
+                <div className="image-container">
+                  <img 
+                    src={image.url} 
+                    alt={`Pixel art at ${formatDate(image.timestamp)}`} 
+                    className="pixel-history-image"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        ))
-      )}
+        )}
+      </div>
     </main>
   );
 }

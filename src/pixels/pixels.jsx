@@ -169,45 +169,6 @@ export function Pixels({ signedIn }) {
     }
   };
 
-  const generateAndSaveImage = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 50;
-    canvas.height = 50;
-    const ctx = canvas.getContext('2d');
-
-    pixels.forEach((pixel) => {
-      const x = pixel.id % 50;
-      const y = Math.floor(pixel.id / 50);
-      ctx.fillStyle = pixel.color;
-      ctx.fillRect(x, y, 1, 1);
-    });
-
-    canvas.toBlob((blob) => {
-      const timestamp = new Date().toISOString();
-      const fileName = `pixel-art-${timestamp}.png`;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        localStorage.setItem(fileName, reader.result);
-      };
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const checkAndGenerateImage = () => {
-    const keys = Object.keys(localStorage);
-    const imageKeys = keys.filter(key => key.startsWith('pixel-art-'));
-    if (imageKeys.length > 0) {
-      const latestImageKey = imageKeys.sort().reverse()[0];
-      const latestTimestamp = new Date(latestImageKey.replace('pixel-art-', '').replace('.png', ''));
-      const now = new Date();
-      const oneHour = 60 * 60 * 1000;
-      if (now - latestTimestamp > oneHour) {
-        generateAndSaveImage();
-      }
-    } else {
-      generateAndSaveImage();
-    }
-  };
 
   const togglePlanningMode = () => {
     setIsPlanningMode((prevMode) => {
