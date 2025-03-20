@@ -14,7 +14,6 @@ export function Pixels({ signedIn }) {
   const username = localStorage.getItem('username'); // Retrieve username from local storage
   const [plannedPixels, setPlannedPixels] = useState([]);
   
-
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
     console.log('Username:', username);
@@ -33,61 +32,40 @@ export function Pixels({ signedIn }) {
     }
   }, [signedIn, username]);
 
-  // Effect for generating or loading pixels
+  // Fetch pixels from server
   useEffect(() => {
-    const savedPixels = localStorage.getItem('pixels');
-    if (savedPixels) {
-      setPixels(JSON.parse(savedPixels));
-    } else {
-      const newPixels = [];
-      for (let i = 0; i < 2500; i++) {
-        const r = Math.floor(Math.random() * 256);
-        const g = Math.floor(Math.random() * 256);
-        const b = Math.floor(Math.random() * 256);
-        const color = rgbToHex(r, g, b);
-        const borderColor = adjustLightness(color, -40);
-        
-        newPixels.push({
-          id: i,
-          color: color,
-          borderColor: borderColor,
-          lastChangedBy: null // Initialize with null
-        });
-      }
-      setPixels(newPixels);
-      localStorage.setItem('pixels', JSON.stringify(newPixels));
-    }
-  }, []); // Empty dependency array means this runs once on mount
-
-  // Effect for saving pixels to local storage whenever they change
-  useEffect(() => {
-    localStorage.setItem('pixels', JSON.stringify(pixels));
-  }, [pixels]);
-
-  // Effect for fetching color of the day and generating color palette
-  useEffect(() => {
-    const fetchColorOfDay = async () => {
-      const today = new Date().toISOString().split('T')[0];
-      try { //sometimes this fetch fails, so when we move to backed design, let's have the server provide backup colors, and only ever have the backend make this call.
-        const response = await fetch(
-          `https://api.allorigins.win/get?url=${encodeURIComponent(
-            `http://colors.zoodinkers.com/api`
-          )}`
-        );
-        console.log(response);
+    const fetchPixels = async () => {
+      const response = await fetch('/api/pixels');
+      if (response.ok) {
         const data = await response.json();
-        const parsedData = JSON.parse(data.contents);
-        const color = parsedData.hex;
-        setColorOfTheDay(color);
-        generateColorPalette(color);
-      } catch (error) {
-        console.error('Error fetching color of the day:', error);
-        console.log(error);
+        setPixels(data);
+      } else {
+        console.error('Failed to fetch pixels');
       }
     };
 
-    fetchColorOfDay();
-  }, []); // Empty dependency array means this runs once on mount
+    fetchPixels();
+  }, []);
+
+  // Effect for fetching color of the day and palette from server
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const response = await fetch('/api/colors');
+        if (response.ok) {
+          const data = await response.json();
+          setColorOfTheDay(data.colorOfTheDay);
+          setColorPalette(data.colorPalette);
+        } else {
+          console.error('Failed to fetch colors from server');
+        }
+      } catch (error) {
+        console.error('Error fetching colors:', error);
+      }
+    };
+    
+    fetchColors();
+  }, []); // Empty dependency array means this runs once on component mount
 
   // Effect for handling the timer countdown
   useEffect(() => {
@@ -114,24 +92,7 @@ export function Pixels({ signedIn }) {
     return () => clearInterval(interval);
   }, [pixels]);  
 
-  const generateColorPalette = (color) => {
-    const rgb = hexToRgb(color);
-    const washedOut = rgbToHex(
-      Math.min(255, rgb.r + 150),
-      Math.min(255, rgb.g + 150),
-      Math.min(255, rgb.b + 150)
-    );
-    const inverted = rgbToHex(255 - rgb.r, 255 - rgb.g, 255 - rgb.b);
-    const rPlus128 = rgbToHex((rgb.r * 5) % 256, (rgb.g * -5) % 256, (rgb.b * 10) % 256);
-    const opposite = rgbToHex(
-      (255 - rgb.r) % 256,
-      rgb.g,
-      (rgb.b - 128 + 256) % 256
-    );
-
-    setColorPalette([color, washedOut, inverted, rPlus128, opposite]);
-  };
-
+  // Utility functions that are still used elsewhere
   const hexToRgb = (hex) => {
     const bigint = parseInt(hex.slice(1), 16);
     const r = (bigint >> 16) & 255;
@@ -150,12 +111,6 @@ export function Pixels({ signedIn }) {
     const newG = Math.min(255, Math.max(0, g + amount));
     const newB = Math.min(255, Math.max(0, b + amount));
     return rgbToHex(newR, newG, newB);
-  };
-
-  const handleColorChange = (e) => {
-    const newColor = e.target.value;
-    setColorOfTheDay(newColor);
-    generateColorPalette(newColor);
   };
 
   const handlePaletteClick = (color) => {
@@ -199,25 +154,9 @@ export function Pixels({ signedIn }) {
           );
         } else {
           console.error('Failed to update pixel on the server');
-          // Optionally, revert the optimistic update if the server fails
-          // setPixels((prevPixels) =>
-          //   prevPixels.map((pixel) =>
-          //     pixel.id === id
-          //       ? { ...pixel, color: '#FFFFFF', borderColor: '#000000' } // Revert to default
-          //       : pixel
-          //   )
-          // );
         }
       } catch (error) {
         console.error('Error updating pixel on the server:', error);
-        // Optionally, revert the optimistic update if there's a network error
-        // setPixels((prevPixels) =>
-        //   prevPixels.map((pixel) =>
-        //     pixel.id === id
-        //       ? { ...pixel, color: '#FFFFFF', borderColor: '#000000' } // Revert to default
-        //       : pixel
-        //   )
-        // );
       }
 
       // Reset painting state
@@ -289,20 +228,6 @@ export function Pixels({ signedIn }) {
     });
   };
 
-  useEffect(() => {
-    const fetchPixels = async () => {
-      const response = await fetch('/api/pixels');
-      if (response.ok) {
-        const data = await response.json();
-        setPixels(data);
-      } else {
-        console.error('Failed to fetch pixels');
-      }
-    };
-
-    fetchPixels();
-  }, []);
-
   return (
     <main className="container-fluid bg-secondary text-center">
       <div className="UI">
@@ -329,13 +254,6 @@ export function Pixels({ signedIn }) {
                 ></div>
               ))}
             </div>
-            {/* Color Picker for testing purposes */}
-            {/*<input
-              type="color"
-              value={colorOfTheDay}
-              onChange={handleColorChange}
-              style={{ marginTop: '20px' }}
-            />*/}
           </div>
         </section>
 

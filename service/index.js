@@ -148,6 +148,128 @@ apiRouter.put('/pixels/:id', verifyAuth, (req, res) => {
   res.status(200).send(pixel); // Respond with the updated pixel
 });
 
+// Color of the day management
+let colorOfTheDay = '#FFFFFF'; // Default color
+let colorPalette = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF']; // Default palette
+let lastColorFetchTime = 0;
+const COLOR_FETCH_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+  const bigint = parseInt(hex.slice(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = (bigint & 255);
+  return { r, g, b };
+}
+
+// Helper function to convert RGB to hex
+function rgbToHex(r, g, b) {
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+// Function to generate color palette from base color - EXACT MATCH to frontend logic
+function generateColorPalette(color) {
+  try {
+    const rgb = hexToRgb(color);
+    
+    // Create the exact same variations as in the frontend
+    const washedOut = rgbToHex(
+      Math.min(255, rgb.r + 150),
+      Math.min(255, rgb.g + 150),
+      Math.min(255, rgb.b + 150)
+    );
+    
+    const inverted = rgbToHex(255 - rgb.r, 255 - rgb.g, 255 - rgb.b);
+    
+    const rPlus128 = rgbToHex(
+      (rgb.r * 5) % 256, 
+      (rgb.g * -7) % 256, 
+      (rgb.b * 10) % 256
+    );
+    
+    const opposite = rgbToHex(
+      (255 - rgb.r) % 256,
+      rgb.g,
+      (rgb.b - 128 + 256) % 256
+    );
+
+    colorPalette = [color, washedOut, inverted, rPlus128, opposite];
+    console.log('Generated color palette:', colorPalette);
+  } catch (error) {
+    console.error('Error generating color palette:', error);
+  }
+}
+
+// Function to fetch color of the day from zoodinkers
+async function fetchColorOfTheDay() {
+  try {
+    const response = await fetch(
+      `https://api.allorigins.win/get?url=${encodeURIComponent(
+        'http://colors.zoodinkers.com/api'
+      )}`
+    );
+    
+    if (response.ok) {
+      const data = await response.json();
+      const parsedData = JSON.parse(data.contents);
+      const newColor = parsedData.hex;
+      
+      // Only update if the color has changed
+      if (newColor !== colorOfTheDay) {
+        colorOfTheDay = newColor;
+        generateColorPalette(colorOfTheDay);
+        console.log('Updated color of the day:', colorOfTheDay);
+      }
+    } else {
+      console.error('Failed to fetch color of the day');
+    }
+  } catch (error) {
+    console.error('Error fetching color of the day:', error);
+    // Set a fallback color if fetch fails
+    if (colorOfTheDay === '#FFFFFF') {
+      colorOfTheDay = '#3498DB'; // Fallback to a nice blue
+      generateColorPalette(colorOfTheDay);
+      console.log('Using fallback color:', colorOfTheDay);
+    }
+  }
+}
+
+// Function to check and update the color if needed
+async function checkAndUpdateColor() {
+  const currentTime = Date.now();
+  
+  // Only fetch if the interval has passed since last fetch
+  if (currentTime - lastColorFetchTime >= COLOR_FETCH_INTERVAL) {
+    await fetchColorOfTheDay();
+    lastColorFetchTime = currentTime;
+  }
+}
+
+// Endpoint to get color of the day and palette
+apiRouter.get('/colors', async (req, res) => {
+  try {
+    // Check if we need to update the color
+    await checkAndUpdateColor();
+    
+    res.send({
+      colorOfTheDay: colorOfTheDay,
+      colorPalette: colorPalette
+    });
+  } catch (error) {
+    console.error('Error serving colors:', error);
+    res.status(500).send({ msg: 'Failed to get colors' });
+  }
+});
+
+// Initialize color of the day
+fetchColorOfTheDay().then(() => {
+  console.log('Initial color of the day loaded:', colorOfTheDay);
+});
+
+// Set up timer to check for color updates every 30 minutes
+setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
+
 // Default error handler
 app.use(function (err, req, res, next) {
   console.error('Express App Error:', err);
@@ -185,10 +307,6 @@ function setAuthCookie(res, authToken) {
     httpOnly: true,
     sameSite: 'strict',
   });
-}
-
-function rgbToHex(r, g, b) {
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 function adjustLightness(color, amount) {

@@ -10,8 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "canvas": "^3.1.0",
     "cookie-parser": "^1.4.7",
     "express": "^4.21.2",
+    "fs-extra": "^11.3.0",
     "uuid": "^11.0.5"
   }
 }
