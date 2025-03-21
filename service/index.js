@@ -21,6 +21,14 @@ app.use(cookieParser());
 const port = process.env.PORT || 4000; // Use environment variable or default to 4000
 app.use(express.static('public'));
 
+// Add this middleware to your Express app for the images folder
+app.use('/images', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Router for service endpoints
 var apiRouter = express.Router();
 app.use(`/api`, apiRouter);
@@ -276,6 +284,12 @@ setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
 // Function to generate and save image
 async function generateAndSaveImage() {
   try {
+    // Make sure the directory exists before trying to write to it
+    if (!fs.existsSync(imageDir)) {
+      console.log('Image directory not found, creating it...');
+      fs.ensureDirSync(imageDir);
+    }
+
     // Create a canvas (50x50 pixels)
     const canvas = createCanvas(50, 50);
     const ctx = canvas.getContext('2d');
@@ -289,20 +303,24 @@ async function generateAndSaveImage() {
     });
 
     // Generate filename with timestamp
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date().getTime();
     const fileName = `pixel-art-${timestamp}.png`;
     const filePath = path.join(imageDir, fileName);
 
-    // Save the image as a PNG
+    // Save the image as a PNG - use fs.promises for proper async handling
     const buffer = canvas.toBuffer('image/png');
-    fs.writeFileSync(filePath, buffer);
+    await fs.promises.writeFile(filePath, buffer);
     
-    console.log(`Generated image: ${fileName}`);
+    console.log(`Generated image: ${fileName} at ${filePath}`);
+
+    // Wait a moment to ensure the file is fully written
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Prune old images (optional - keep last 50 images)
     pruneOldImages(50);
   } catch (error) {
     console.error('Error generating image:', error);
+    console.error(error.stack); // Log the full stack trace
   }
 }
 
@@ -325,9 +343,10 @@ function pruneOldImages(keepCount) {
   }
 }
 
-// Create image directory if it doesn't exist
-const imageDir = path.join(__dirname, 'images');
+// Create image directory in a location that will work in production
+const imageDir = path.join(process.cwd(), 'public', 'images');
 fs.ensureDirSync(imageDir);
+console.log(`Created/verified image directory at: ${imageDir}`);
 
 // Initialize image generation on server start
 generateAndSaveImage();
@@ -342,14 +361,15 @@ apiRouter.get('/images', (req, res) => {
     const files = fs.readdirSync(imageDir)
       .filter(file => file.startsWith('pixel-art-'))
       .map(file => {
-        const timestamp = file.replace('pixel-art-', '').replace('.png', '');
+        const timestamp = parseInt(file.replace('pixel-art-', '').replace('.png', ''));
         return {
           filename: file,
           timestamp: timestamp,
-          url: `/api/images/${file}`
+          // Add a cache-busting query parameter
+          url: `/images/${file}?t=${Date.now()}`
         };
       })
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      .sort((a, b) => b.timestamp - a.timestamp);
     
     res.json(files);
   } catch (error) {
