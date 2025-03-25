@@ -349,7 +349,7 @@ console.log(`Created/verified image directory at: ${imageDir}`);
 generateAndSaveImageIfNeeded();
 
 // Set up timer to generate images every 5 minutes
-const FIVE_MINUTES = 1 * 60 * 1000; //1 should be a 5
+const FIVE_MINUTES = 30 * 60 * 1000; //1 should be a 5
 setInterval(generateAndSaveImageIfNeeded, FIVE_MINUTES);
 
 // Endpoint to get list of all saved images
