@@ -6,6 +6,7 @@ const { createCanvas } = require('canvas');
 const fs = require('fs-extra');
 const path = require('path');
 const app = express();
+const DB = require('./database.js');
 
 //using simon code
 let users = [];
