@@ -25,13 +25,21 @@ export function History() {
     fetchImages();
   }, []);
 
-  const formatDate = (timestamp) => {
+  const formatDate = (timestampStr) => {
     try {
-      // timestamp is now a numeric value
-      const date = new Date(parseInt(timestamp));
-      return date.toLocaleString();
+      // Parse the ISO string directly
+      const date = new Date(timestampStr);
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date created from:', timestampStr);
+        return 'Unknown date';
+      }
+      
+      // Format with detailed output for debugging
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     } catch (e) {
-      console.error('Date parsing error:', e, 'for timestamp:', timestamp);
+      console.error('Date parsing error:', e, 'for timestamp:', timestampStr);
       return 'Unknown date';
     }
   };

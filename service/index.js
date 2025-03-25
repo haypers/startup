@@ -21,14 +21,6 @@ app.use(cookieParser());
 const port = process.env.PORT || 4000; // Use environment variable or default to 4000
 app.use(express.static('public'));
 
-// Add this middleware to your Express app for the images folder
-app.use('/images', (req, res, next) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  next();
-});
-
 // Router for service endpoints
 var apiRouter = express.Router();
 app.use(`/api`, apiRouter);
@@ -303,18 +295,15 @@ async function generateAndSaveImage() {
     });
 
     // Generate filename with timestamp
-    const timestamp = new Date().getTime();
+    const timestamp = new Date().toISOString().replace(/:/g, '-'); // Replace colons with hyphens for Windows compatibility
     const fileName = `pixel-art-${timestamp}.png`;
     const filePath = path.join(imageDir, fileName);
 
-    // Save the image as a PNG - use fs.promises for proper async handling
+    // Save the image as a PNG
     const buffer = canvas.toBuffer('image/png');
-    await fs.promises.writeFile(filePath, buffer);
+    fs.writeFileSync(filePath, buffer);
     
     console.log(`Generated image: ${fileName} at ${filePath}`);
-
-    // Wait a moment to ensure the file is fully written
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Prune old images (optional - keep last 50 images)
     pruneOldImages(50);
@@ -361,15 +350,14 @@ apiRouter.get('/images', (req, res) => {
     const files = fs.readdirSync(imageDir)
       .filter(file => file.startsWith('pixel-art-'))
       .map(file => {
-        const timestamp = parseInt(file.replace('pixel-art-', '').replace('.png', ''));
+        const timestamp = file.replace('pixel-art-', '').replace('.png', '');
         return {
           filename: file,
           timestamp: timestamp,
-          // Add a cache-busting query parameter
-          url: `/images/${file}?t=${Date.now()}`
+          url: `/images/${file}` // Changed from /api/images/ to /images/
         };
       })
-      .sort((a, b) => b.timestamp - a.timestamp);
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
     res.json(files);
   } catch (error) {
