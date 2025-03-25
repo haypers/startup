@@ -25,23 +25,9 @@ export function History() {
     fetchImages();
   }, []);
 
-  const formatDate = (timestampStr) => {
-    try {
-      // Parse the ISO string directly
-      const date = new Date(timestampStr);
-      
-      // Check if the date is valid
-      if (isNaN(date.getTime())) {
-        console.error('Invalid date created from:', timestampStr);
-        return 'Unknown date';
-      }
-      
-      // Format with detailed output for debugging
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-    } catch (e) {
-      console.error('Date parsing error:', e, 'for timestamp:', timestampStr);
-      return 'Unknown date';
-    }
+  const formatDate = (timestamp) => {
+    const date = new Date(Number(timestamp));
+    return isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleString();
   };
 
   return (
@@ -64,13 +50,6 @@ export function History() {
                     src={image.url} 
                     alt={`Pixel art at ${formatDate(image.timestamp)}`} 
                     className="pixel-history-image"
-                    onError={(e) => {
-                      console.error(`Error loading image: ${image.url}`);
-                      // Retry loading with a delay
-                      setTimeout(() => {
-                        e.target.src = `${image.url}&retry=${Date.now()}`;
-                      }, 1000);
-                    }}
                   />
                 </div>
               </div>

@@ -273,20 +273,33 @@ fetchColorOfTheDay().then(() => {
 // Set up timer to check for color updates every 30 minutes
 setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
 
-// Function to generate and save image
-async function generateAndSaveImage() {
+// Function to generate and save image if needed
+let lastSavedPixelState = null;
+
+async function generateAndSaveImageIfNeeded() {
   try {
-    // Make sure the directory exists before trying to write to it
     if (!fs.existsSync(imageDir)) {
       console.log('Image directory not found, creating it...');
       fs.ensureDirSync(imageDir);
     }
 
-    // Create a canvas (50x50 pixels)
+    if (pixels.length === 0) {
+      console.log('Pixels array is not initialized. Skipping image generation.');
+      return;
+    }
+
+    const currentPixelState = JSON.stringify(pixels);
+
+    if (currentPixelState === lastSavedPixelState) {
+      console.log('No changes detected in pixel state. Skipping image generation.');
+      return;
+    }
+
+    lastSavedPixelState = currentPixelState;
+
     const canvas = createCanvas(50, 50);
     const ctx = canvas.getContext('2d');
 
-    // Draw each pixel onto the canvas
     pixels.forEach((pixel) => {
       const x = pixel.id % 50;
       const y = Math.floor(pixel.id / 50);
@@ -294,33 +307,28 @@ async function generateAndSaveImage() {
       ctx.fillRect(x, y, 1, 1);
     });
 
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().replace(/:/g, '-'); // Replace colons with hyphens for Windows compatibility
+    const timestamp = Date.now();
     const fileName = `pixel-art-${timestamp}.png`;
     const filePath = path.join(imageDir, fileName);
 
-    // Save the image as a PNG
     const buffer = canvas.toBuffer('image/png');
     fs.writeFileSync(filePath, buffer);
-    
-    console.log(`Generated image: ${fileName} at ${filePath}`);
 
-    // Prune old images (optional - keep last 50 images)
+    console.log(`Generated new image: ${fileName}`);
+
     pruneOldImages(50);
   } catch (error) {
     console.error('Error generating image:', error);
-    console.error(error.stack); // Log the full stack trace
   }
 }
 
-// Function to prune old images, keeping only the specified number of most recent ones
+// Prune old images
 function pruneOldImages(keepCount) {
   try {
     const files = fs.readdirSync(imageDir)
       .filter(file => file.startsWith('pixel-art-'))
-      .sort()
-      .reverse();
-    
+      .sort((a, b) => b.localeCompare(a));
+
     if (files.length > keepCount) {
       files.slice(keepCount).forEach(file => {
         fs.unlinkSync(path.join(imageDir, file));
@@ -338,11 +346,11 @@ fs.ensureDirSync(imageDir);
 console.log(`Created/verified image directory at: ${imageDir}`);
 
 // Initialize image generation on server start
-generateAndSaveImage();
+generateAndSaveImageIfNeeded();
 
 // Set up timer to generate images every 5 minutes
-const FIVE_MINUTES = 5 * 60 * 1000;
-setInterval(generateAndSaveImage, FIVE_MINUTES);
+const FIVE_MINUTES = 1 * 60 * 1000; //1 should be a 5
+setInterval(generateAndSaveImageIfNeeded, FIVE_MINUTES);
 
 // Endpoint to get list of all saved images
 apiRouter.get('/images', (req, res) => {
@@ -350,15 +358,15 @@ apiRouter.get('/images', (req, res) => {
     const files = fs.readdirSync(imageDir)
       .filter(file => file.startsWith('pixel-art-'))
       .map(file => {
-        const timestamp = file.replace('pixel-art-', '').replace('.png', '');
+        const timestamp = parseInt(file.replace('pixel-art-', '').replace('.png', ''), 10);
         return {
           filename: file,
           timestamp: timestamp,
-          url: `/images/${file}` // Changed from /api/images/ to /images/
+          url: `/images/${file}`
         };
       })
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
+      .sort((a, b) => b.timestamp - a.timestamp);
+
     res.json(files);
   } catch (error) {
     console.error('Error getting image list:', error);
