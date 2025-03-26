@@ -97,20 +97,36 @@ apiRouter.get('/auth/status', async (req, res) => {
   }
 });
 
+// Add a debug route
+apiRouter.get('/auth/debug', (req, res) => {
+  const token = req.cookies[authCookieName];
+  res.json({
+    hasCookie: !!token,
+    cookieValue: token ? token.substring(0, 5) + '...' : 'none',
+    headers: req.headers,
+  });
+});
+
 // Middleware to verify that the user is authorized to call an endpoint
-const verifyAuth = async (req, res, next) => {
+async function verifyAuth(req, res, next) {
   try {
-    const user = await findUser('token', req.cookies[authCookieName]);
-    if (user) {
-      next();
-    } else {
-      res.status(401).send({ msg: 'Unauthorized' });
+    const token = req.cookies[authCookieName]; // Ensure the cookie name matches
+    if (!token) {
+      return res.status(401).send({ msg: 'Unauthorized' });
     }
+
+    const user = await DB.getUserByToken(token);
+    if (!user) {
+      return res.status(401).send({ msg: 'Unauthorized' });
+    }
+
+    req.user = user; // Attach user info to the request
+    next();
   } catch (error) {
-    console.error('Verify Auth Error:', error);
-    res.status(500).send({ msg: 'Authentication failed' });
+    console.error('Auth error:', error);
+    res.status(401).send({ msg: 'Unauthorized' });
   }
-};
+}
 
 // In index.js - Initialize or load pixels from DB
 let pixels = [];
@@ -187,6 +203,29 @@ apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
   }
 });
 
+// Endpoint to get all pixels
+apiRouter.get('/pixels', async (req, res) => {
+  try {
+    // If pixels are already loaded in memory, return them
+    if (pixels.length > 0) {
+      return res.json(pixels);
+    }
+    
+    // Otherwise fetch from database
+    const dbPixels = await DB.getPixels();
+    if (dbPixels && dbPixels.length > 0) {
+      pixels = dbPixels; // Update the in-memory copy
+      return res.json(dbPixels);
+    }
+    
+    // If still no pixels, return empty array
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching pixels:', error);
+    res.status(500).send({ msg: 'Failed to fetch pixels' });
+  }
+});
+
 // Color of the day management
 let colorOfTheDay = '#FFFFFF'; // Default color
 let colorPalette = ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF']; // Default palette
@@ -243,14 +282,12 @@ function generateColorPalette(color) {
 // Function to fetch color of the day from zoodinkers using a CORS proxy
 async function fetchColorOfTheDay() {
   try {
-    // Check if we already have colors in the database
     const dbColors = await DB.getColors();
     if (dbColors) {
       const lastUpdated = new Date(dbColors.lastUpdated);
       const now = new Date();
       const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
-      
-      // If it's been less than 24 hours since the last update, use the stored colors
+
       if (hoursSinceUpdate < 24) {
         colorOfTheDay = dbColors.colorOfTheDay;
         colorPalette = dbColors.colorPalette;
@@ -258,27 +295,23 @@ async function fetchColorOfTheDay() {
         return;
       }
     }
-    
-    // Use a CORS proxy to avoid certificate issues
+
     const proxyUrl = 'https://api.allorigins.win/get?url=';
     const apiUrl = 'http://colors.zoodinkers.com/api';
     const encodedApiUrl = encodeURIComponent(apiUrl);
-    
+
     const response = await fetch(`${proxyUrl}${encodedApiUrl}`);
-    
     if (response.ok) {
       const data = await response.json();
       if (data && data.contents) {
-        // The actual API response is in the contents property
         const parsedContents = JSON.parse(data.contents);
         const newColor = parsedContents.hex;
-        
+
         if (newColor !== colorOfTheDay) {
           colorOfTheDay = newColor;
           generateColorPalette(colorOfTheDay);
           console.log('Updated color of the day:', colorOfTheDay);
-          
-          // Save to database
+
           await DB.saveColors(colorOfTheDay, colorPalette);
         }
       } else {
@@ -289,23 +322,6 @@ async function fetchColorOfTheDay() {
     }
   } catch (error) {
     console.error('Error fetching color of the day:', error);
-    
-    // Fallback: use a fixed color if nothing in DB or error occurs
-    if (!colorOfTheDay || colorOfTheDay === '#FFFFFF') {
-      colorOfTheDay = '#3498DB'; // Nice blue default color
-      generateColorPalette(colorOfTheDay);
-      console.log('Using fallback default color:', colorOfTheDay);
-      
-      // Optionally save this fallback to DB
-      try {
-        await DB.saveColors(colorOfTheDay, colorPalette);
-      } catch (saveError) {
-        console.error('Error saving fallback colors:', saveError);
-      }
-    } else {
-      // Use what we already had in memory
-      console.log('Using previously loaded color:', colorOfTheDay);
-    }
   }
 }
 
@@ -323,12 +339,10 @@ async function checkAndUpdateColor() {
 // Endpoint to get color of the day and palette
 apiRouter.get('/colors', async (req, res) => {
   try {
-    // Check if we need to update the color
-    await checkAndUpdateColor();
-    
+    await checkAndUpdateColor(); // Ensure the color is up-to-date
     res.send({
       colorOfTheDay: colorOfTheDay,
-      colorPalette: colorPalette
+      colorPalette: colorPalette,
     });
   } catch (error) {
     console.error('Error serving colors:', error);
@@ -443,9 +457,9 @@ app.use(function (err, req, res, next) {
   res.status(500).send({ type: err.name, message: err.message });
 });
 
-// Return the application's default page if the path is unknown
+// Optionally replace with a simple API response
 app.use((_req, res) => {
-  res.sendFile('index.html', { root: path.join(__dirname, '..', 'build') });
+  res.status(404).json({ error: 'Not found' });
 });
 
 async function createUser(email, password) {
@@ -475,9 +489,10 @@ async function findUser(field, value) {
 // setAuthCookie in the HTTP response
 function setAuthCookie(res, authToken) {
   res.cookie(authCookieName, authToken, {
-    secure: true,
-    httpOnly: true,
-    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
 
@@ -503,3 +518,62 @@ process.on('unhandledRejection', (reason, promise) => {
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
+const handlePixelClick = async (id) => {
+  if (!signedIn) {
+    setShowAuthModal(true);
+    return;
+  }
+
+  if (!isPlanningMode && !canPaint) {
+    console.log('Cannot paint yet, timer is still running');
+    return;
+  }
+
+  try {
+    const newColor = brushColor;
+    const newBorderColor = adjustLightness(newColor, -40);
+
+    // Update the local state first for immediate feedback
+    setPixels((currentPixels) => {
+      const updatedPixels = [...currentPixels];
+      const pixel = updatedPixels.find((p) => p.id === id);
+      if (pixel) {
+        pixel.color = newColor;
+        pixel.borderColor = newBorderColor;
+        pixel.lastChangedBy = username;
+      }
+      return updatedPixels;
+    });
+
+    const response = await fetch(`/api/pixels/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Ensure cookies are sent
+      body: JSON.stringify({
+        color: newColor,
+        borderColor: newBorderColor,
+        lastChangedBy: username,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
+
+    // Reset timer after successful pixel update
+    setTimer(15);
+    setCanPaint(false);
+    setTimerMessage("Draw a pixel in:");
+    setSubMessage("15 seconds");
+
+    console.log('Pixel updated successfully');
+  } catch (error) {
+    console.error('Failed to update pixel on the server', error);
+
+    // Revert the local change if the server update fails
+    fetchPixels();
+  }
+};

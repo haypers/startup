@@ -11,8 +11,10 @@ export function Pixels({ signedIn }) {
   const [timerMessage, setTimerMessage] = useState("Draw a pixel in:");
   const [subMessage, setSubMessage] = useState(`${timer} seconds`);
   const [isPlanningMode, setIsPlanningMode] = useState(false); // New state for planning mode
+  const [canPaint, setCanPaint] = useState(false);
   const username = localStorage.getItem('username'); // Retrieve username from local storage
   const [plannedPixels, setPlannedPixels] = useState([]);
+  const [showAuthModal, setShowAuthModal] = useState(false); // New state for auth modal
   
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
@@ -33,17 +35,22 @@ export function Pixels({ signedIn }) {
   }, [signedIn, username]);
 
   // Fetch pixels from server
-  useEffect(() => {
-    const fetchPixels = async () => {
+  const fetchPixels = async () => {
+    try {
       const response = await fetch('/api/pixels');
       if (response.ok) {
         const data = await response.json();
+        console.log(`Received ${data.length} pixels from API`);
         setPixels(data);
       } else {
         console.error('Failed to fetch pixels');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching pixels:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchPixels();
   }, []);
 
@@ -74,23 +81,29 @@ export function Pixels({ signedIn }) {
       setSubMessage("Change up to 30 pixels that other players can choose to help you paint!");
     } else if (signedIn && timer > 0) {
       const interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer - 1);
-        setSubMessage(`${timer - 1} seconds`);
+        setTimer((prevTimer) => {
+          if (prevTimer > 1) {
+            setSubMessage(`${prevTimer - 1} seconds`);
+            return prevTimer - 1;
+          } else {
+            clearInterval(interval);
+            setTimerMessage("Draw a Pixel Now");
+            setSubMessage("Select one of the daily colors!");
+            setCanPaint(true); // Enable painting when timer reaches 0
+            return 0;
+          }
+        });
       }, 1000);
       return () => clearInterval(interval);
-    } else if (timer === 0) {
-      setTimerMessage("Draw a Pixel Now");
-      setSubMessage("Select one of the daily colors!");
     }
   }, [signedIn, timer, isPlanningMode]);
 
   // Effect for checking and generating image every minute
   useEffect(() => {
-    const interval = setInterval(() => {
-      checkAndGenerateImage();
-    }, 60000); // 60000 ms = 1 minute
-    return () => clearInterval(interval);
-  }, [pixels]);  
+    console.log('Image generation now handled by server');
+    
+    return () => {};
+  }, []);  
 
   // Utility functions that are still used elsewhere
   const hexToRgb = (hex) => {
@@ -114,7 +127,7 @@ export function Pixels({ signedIn }) {
   };
 
   const handlePaletteClick = (color) => {
-    if (isPlanningMode || timer === 0) {
+    if (isPlanningMode || (canPaint && timer === 0)) {
       setBrushColor(color);
       setIsPainting(true);
       setSubMessage("Now, Select A Pixel to Paint!");
@@ -123,52 +136,72 @@ export function Pixels({ signedIn }) {
   };
 
   const handlePixelClick = async (id) => {
-    if (isPlanningMode) {
-      // Handle planning mode logic here (if needed)
-    } else if (isPainting) {
-      const borderColor = adjustLightness(brushColor, -40);
+    // Check authentication
+    if (!signedIn) {
+      setShowAuthModal(true);
+      return;
+    }
+    
+    // Check if timer is not 0 and not in planning mode
+    if (!isPlanningMode && !canPaint) {
+      console.log('Cannot paint yet, timer is still running');
+      return;
+    }
 
-      try {
-        // Notify the server of the pixel change
-        const response = await fetch(`/api/pixels/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            color: brushColor, // Send the selected brush color
-            borderColor: borderColor, // Send the adjusted border color
-            lastChangedBy: username, // Include the username of the player
-          }),
-          credentials: 'include', // Include cookies for authentication
-        });
-
-        if (response.ok) {
-          // If the server update was successful, update the local state
-          setPixels((prevPixels) =>
-            prevPixels.map((pixel) =>
-              pixel.id === id
-                ? { ...pixel, color: brushColor, borderColor: borderColor }
-                : pixel
-            )
-          );
-        } else {
-          console.error('Failed to update pixel on the server');
+    try {
+      const newColor = brushColor;
+      const newBorderColor = adjustLightness(newColor, -40);
+      
+      // Update the local state first for immediate feedback
+      setPixels(currentPixels => {
+        const updatedPixels = [...currentPixels];
+        const pixel = updatedPixels.find(p => p.id === id);
+        if (pixel) {
+          pixel.color = newColor;
+          pixel.borderColor = newBorderColor;
+          pixel.lastChangedBy = username;
         }
-      } catch (error) {
-        console.error('Error updating pixel on the server:', error);
+        return updatedPixels;
+      });
+      
+      // If in planning mode, just update local state
+      if (isPlanningMode) {
+        // Handle planning mode logic
+        return;
       }
-
-      // Reset painting state
-      setBrushColor('#FFFFFF'); // Reset brush color to white
-      document.querySelector('.brush-icon').classList.remove('selected');
-      setIsPainting(false); // Exit painting state
-      setTimer(15); // Reset timer to 15 seconds
-      setTimerMessage('Draw a pixel in:');
-      setSubMessage(`${15} seconds`);
+      
+      // Normal mode - update on the server
+      const response = await fetch(`/api/pixels/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important - this ensures cookies are sent
+        body: JSON.stringify({
+          color: newColor,
+          borderColor: newBorderColor,
+          lastChangedBy: username
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
+      // Reset timer after successful pixel update
+      setTimer(15);
+      setCanPaint(false);
+      setTimerMessage("Draw a pixel in:");
+      setSubMessage("15 seconds");
+      
+      console.log('Pixel updated successfully');
+    } catch (error) {
+      console.error('Failed to update pixel on the server', error);
+      
+      // Revert the local change if the server update fails
+      fetchPixels();
     }
   };
-
 
   const togglePlanningMode = () => {
     setIsPlanningMode((prevMode) => {

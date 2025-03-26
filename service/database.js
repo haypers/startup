@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const config = require('./dbConfig.json');
 
 const url = `mongodb+srv://${config.userName}:${config.password}@${config.hostname}`;
@@ -30,8 +30,13 @@ function getUser(email) {
 }
 
 // Get user by token
-function getUserByToken(token) {
-  return userCollection.findOne({ token: token });
+async function getUserByToken(token) {
+  try {
+    return await userCollection.findOne({ token: token });
+  } catch (error) {
+    console.error('Error getting user by token:', error);
+    return null;
+  }
 }
 
 // Add a new user
@@ -50,8 +55,14 @@ async function updateUser(user) {
 
 // Get the current state of the pixel art grid
 async function getPixels() {
-  const artDoc = await artCollection.findOne({ _id: 'current' });
-  return artDoc ? artDoc.pixels : [];
+  try {
+    const artDoc = await artCollection.findOne({ _id: 'current' });
+    console.log(`Retrieved ${artDoc?.pixels?.length || 0} pixels from database`);
+    return artDoc && artDoc.pixels ? artDoc.pixels : [];
+  } catch (error) {
+    console.error('Error getting pixels from database:', error);
+    return [];
+  }
 }
 
 // Update a single pixel
@@ -76,13 +87,20 @@ async function updatePixel(id, pixelData) {
 
 // Save the entire pixel grid
 async function savePixels(pixels) {
-  const result = await artCollection.updateOne(
-    { _id: 'current' },
-    { $set: { pixels: pixels } },
-    { upsert: true }
-  );
-  
-  return result.modifiedCount > 0 || result.upsertedCount > 0;
+  try {
+    // Convert array to object with proper indexing if needed
+    const result = await artCollection.updateOne(
+      { _id: 'current' },
+      { $set: { pixels: pixels } },
+      { upsert: true }
+    );
+    
+    console.log(`Saved ${pixels.length} pixels to database`);
+    return result.modifiedCount > 0 || result.upsertedCount > 0;
+  } catch (error) {
+    console.error('Error saving pixels to database:', error);
+    return false;
+  }
 }
 
 // ===== COLOR OPERATIONS =====
