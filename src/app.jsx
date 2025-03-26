@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './app.css';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
-import { Signin, logoutUser, checkAuthStatus } from './signin/signin'; // Import the checkAuthStatus function
+import { Signin as Signin, logoutUser, checkAuthStatus } from './signin/signin'; // Import the checkAuthStatus function
 import { Pixels } from './pixels/pixels';
 import { History } from './history/history';
 import { About } from './about/about';
 import { AuthProvider } from './authContext';
 
+// Make sure this is exported:
 export const AuthState = {
   Unknown: 'Unknown',
   Authenticated: 'Authenticated',

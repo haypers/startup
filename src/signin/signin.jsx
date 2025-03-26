@@ -7,6 +7,11 @@ export async function logoutUser() {
   await fetch('/api/auth/logout', {
     method: 'DELETE',
   });
+  
+  // Remove token
+  localStorage.removeItem('token');
+  
+  // Also remove these for backward compatibility
   localStorage.removeItem('authState');
   localStorage.removeItem('username');
 }
@@ -29,12 +34,47 @@ export async function checkAuthStatus() {
   }
 }
 
-export function SignIn({ onAuthChange }) {
+export function Signin({ onAuthChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [createError, setCreateError] = useState('');
   const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Store token in localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.email);
+        
+        console.log('Token stored in localStorage:', data.token.substring(0, 5) + '...');
+        
+        // Update auth state
+        onAuthChange(data.email, AuthState.Authenticated);
+        
+        // Navigate to home
+        navigate('/');
+      } else {
+        setLoginError('Invalid credentials');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('Login failed. Please try again.');
+    }
+  };
 
   const registerUser = async (email, password) => {
     const response = await fetch('/api/auth/create', {
@@ -73,17 +113,6 @@ export function SignIn({ onAuthChange }) {
     } else {
       const error = await response.json();
       throw new Error(error.msg);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const userName = await loginUser(email, password);
-      onAuthChange(userName, 'Authenticated');
-      navigate('/');
-    } catch (error) {
-      alert(error.message);
     }
   };
 
