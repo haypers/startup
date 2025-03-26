@@ -151,7 +151,7 @@ const handlePixelClick = async (id) => {
     const newColor = brushColor;
     const newBorderColor = adjustLightness(newColor, -40);
     
-    // Get token from localStorage - retrieve fresh every time
+    // Get token from localStorage
     const token = localStorage.getItem('token');
     console.log('Token from localStorage:', token ? `${token.substring(0, 5)}...` : 'null');
 
@@ -162,9 +162,9 @@ const handlePixelClick = async (id) => {
     }
 
     // Update the local state first for immediate feedback
-    setPixels((currentPixels) => {
+    setPixels(currentPixels => {
       const updatedPixels = [...currentPixels];
-      const pixel = updatedPixels.find((p) => p.id === id);
+      const pixel = updatedPixels.find(p => p.id === id);
       if (pixel) {
         pixel.color = newColor;
         pixel.borderColor = newBorderColor;
@@ -173,9 +173,8 @@ const handlePixelClick = async (id) => {
       return updatedPixels;
     });
 
-    console.log(`Sending request to update pixel ${id} with auth token: ${token.substring(0, 5)}...`);
-    
     // Send the request with the token in the Authorization header
+    console.log(`Sending request to update pixel ${id} with token ${token.substring(0, 5)}...`);
     const response = await fetch(`/api/pixels/${id}`, {
       method: 'PUT',
       headers: {
@@ -185,23 +184,21 @@ const handlePixelClick = async (id) => {
       body: JSON.stringify({
         color: newColor,
         borderColor: newBorderColor,
-        lastChangedBy: username,
-      }),
+        lastChangedBy: username
+      })
     });
 
     if (!response.ok) {
-      console.error(`Server returned error ${response.status}`);
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Server returned ${response.status}: ${errorData.msg || ''}`);
+      throw new Error(`Server returned ${response.status}`);
     }
 
-    console.log('Pixel updated successfully');
-    
     // Reset timer after successful pixel update
     setTimer(15);
     setCanPaint(false);
     setTimerMessage("Draw a pixel in:");
     setSubMessage("15 seconds");
+
+    console.log('Pixel updated successfully');
   } catch (error) {
     console.error('Failed to update pixel on the server', error);
     

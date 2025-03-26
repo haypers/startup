@@ -112,20 +112,25 @@ export function Signin({ onAuthChange }) {
         const data = await response.json();
         console.log('Login response:', data); // Debug the response
         
+        // Make sure the token exists in the response
+        if (!data.token) {
+          console.error('No token received from server');
+          setLoginError('Login failed - no token received');
+          return;
+        }
+        
         // Store token in localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.email);
         
         // Log that we stored the token
-        console.log('Token stored in localStorage:', data.token);
+        console.log('Token stored in localStorage:', data.token.substring(0, 5) + '...');
         
         // Tell the parent component that the user is signed in
-        if (onSignIn) {
-          onSignIn(true);
-        }
+        onAuthChange(data.email, AuthState.Authenticated);
         
         // Navigate to the pixels page
-        navigate('/pixels');
+        navigate('/');
       } else {
         setLoginError('Invalid credentials');
       }

@@ -46,13 +46,14 @@ export default function App() {
       })
       .then(response => {
         if (response.ok) {
-          setSignedIn(true);
+          setAuthState(AuthState.Authenticated); // Use authState instead of signedIn
+          setUserName(username);
           console.log('Auto-login successful');
         } else {
           // Clear invalid credentials
           localStorage.removeItem('token');
           localStorage.removeItem('username');
-          setSignedIn(false);
+          setAuthState(AuthState.Unauthenticated); // Use authState instead of signedIn
           console.log('Stored credentials were invalid');
         }
       })

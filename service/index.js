@@ -56,9 +56,11 @@ apiRouter.post('/auth/login', async (req, res) => {
         
         // Send the token in the response body
         console.log(`Login successful for ${user.email}, token: ${newToken.substring(0, 5)}...`);
+        
+        // Make sure to return the new token, not the old one
         res.send({ 
           email: user.email, 
-          token: newToken  // Make sure this is the NEW token
+          token: newToken
         });
         return;
       }
@@ -88,7 +90,21 @@ apiRouter.delete('/auth/logout', async (req, res) => {
 // Verify authentication status
 apiRouter.get('/auth/status', async (req, res) => {
   try {
-    const token = req.cookies[authCookieName];
+    // Try to get token from Authorization header
+    const authHeader = req.headers.authorization;
+    let token;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      console.log('Auth status: Got token from Authorization header');
+    } else {
+      // Fallback to cookie
+      token = req.cookies[authCookieName];
+      if (token) {
+        console.log('Auth status: Got token from cookie');
+      }
+    }
+
     if (!token) {
       return res.status(401).send({ msg: 'Unauthorized' });
     }
@@ -127,38 +143,41 @@ apiRouter.get('/auth/debug', (req, res) => {
   });
 });
 
-// Middleware to verify that the user is authorized to call an endpoint
+// Middleware to verify authorization for API endpoints
 async function verifyAuth(req, res, next) {
   try {
-    // Log all headers to debug
-    console.log('Request headers:', JSON.stringify(req.headers));
-    
+    // Try to get token from Authorization header
     const authHeader = req.headers.authorization;
-    console.log('Authorization header:', authHeader);
+    let token;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).send({ msg: 'Unauthorized - Invalid authorization format' });
-    }
-    
-    const token = authHeader.split(' ')[1];
-    console.log('Token from header:', token ? `${token.substring(0, 5)}...` : 'undefined');
-    
-    if (!token) {
-      return res.status(401).send({ msg: 'Unauthorized - No token provided' });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      console.log('verifyAuth: Got token from Authorization header');
+    } else {
+      // Fallback to cookie
+      token = req.cookies[authCookieName];
+      if (token) {
+        console.log('verifyAuth: Got token from cookie');
+      }
     }
 
-    const user = await DB.getUserByToken(token);
-    console.log('User from token:', user ? `Found user: ${user.email}` : 'No user found');
+    console.log('Token for auth check:', token ? token.substring(0, 5) + '...' : 'none');
     
+    if (!token) {
+      return res.status(401).send({ msg: 'Unauthorized - No token' });
+    }
+
+    const user = await findUser('token', token);
     if (!user) {
       return res.status(401).send({ msg: 'Unauthorized - Invalid token' });
     }
 
+    // Authentication successful
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).send({ msg: 'Unauthorized - Authentication error' });
+    console.error('Auth verification error:', error);
+    res.status(401).send({ msg: 'Unauthorized - Error during auth check' });
   }
 }
 
