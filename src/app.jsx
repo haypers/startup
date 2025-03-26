@@ -8,7 +8,7 @@ import { History } from './history/history';
 import { About } from './about/about';
 import { AuthProvider } from './authContext';
 
-const AuthState = {
+export const AuthState = {
   Unknown: 'Unknown',
   Authenticated: 'Authenticated',
   Unauthenticated: 'Unauthenticated',
@@ -38,6 +38,7 @@ export default function App() {
     
     if (token && username) {
       console.log(`Found stored credentials for ${username}`);
+      
       // Validate the token with the server
       fetch('/api/auth/status', {
         headers: {
@@ -46,14 +47,14 @@ export default function App() {
       })
       .then(response => {
         if (response.ok) {
-          setAuthState(AuthState.Authenticated); // Use authState instead of signedIn
+          setAuthState(AuthState.Authenticated);
           setUserName(username);
-          console.log('Auto-login successful');
+          console.log('Auto-login successful with token from localStorage');
         } else {
           // Clear invalid credentials
           localStorage.removeItem('token');
           localStorage.removeItem('username');
-          setAuthState(AuthState.Unauthenticated); // Use authState instead of signedIn
+          setAuthState(AuthState.Unauthenticated);
           console.log('Stored credentials were invalid');
         }
       })

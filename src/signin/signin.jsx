@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import './signin.css';
 import { useNavigate } from 'react-router-dom';
+import './signin.css';
+import { AuthState } from '../app'; // This should now work
 
 export async function logoutUser() {
   await fetch('/api/auth/logout', {
@@ -28,11 +29,11 @@ export async function checkAuthStatus() {
   }
 }
 
-export function Signin({ onAuthChange }) {
+export function SignIn({ onAuthChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [signedIn, setSignedIn] = useState(false);
-  const [error, setError] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [createError, setCreateError] = useState('');
   const navigate = useNavigate();
 
   const registerUser = async (email, password) => {
@@ -110,26 +111,17 @@ export function Signin({ onAuthChange }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login response:', data); // Debug the response
-        
-        // Make sure the token exists in the response
-        if (!data.token) {
-          console.error('No token received from server');
-          setLoginError('Login failed - no token received');
-          return;
-        }
         
         // Store token in localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.email);
         
-        // Log that we stored the token
         console.log('Token stored in localStorage:', data.token.substring(0, 5) + '...');
         
-        // Tell the parent component that the user is signed in
+        // Update auth state
         onAuthChange(data.email, AuthState.Authenticated);
         
-        // Navigate to the pixels page
+        // Navigate to home
         navigate('/');
       } else {
         setLoginError('Invalid credentials');
@@ -137,6 +129,42 @@ export function Signin({ onAuthChange }) {
     } catch (error) {
       console.error('Login error:', error);
       setLoginError('Login failed. Please try again.');
+    }
+  };
+
+  const handleCreateAccount = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/auth/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // IMPORTANT: Store the token in localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.email);
+        
+        console.log('[CreateAccount] Token stored in localStorage:', data.token.substring(0, 5) + '...');
+        
+        // Tell the app the user is authenticated
+        onAuthChange(data.email, AuthState.Authenticated);
+        
+        // Navigate to home page
+        navigate('/');
+      } else {
+        const errorData = await response.json();
+        setCreateError(errorData.msg || 'Failed to create account');
+      }
+    } catch (error) {
+      console.error('Create account error:', error);
+      setCreateError('Failed to create account. Please try again.');
     }
   };
 
@@ -170,7 +198,7 @@ export function Signin({ onAuthChange }) {
             </div>
             <div className="d-grid gap-2">
               <button type="submit" className="btn btn-primary">Login</button>
-              <button type="button" className="btn btn-outline-secondary" onClick={handleSignUp}>Create Account</button>
+              <button type="button" className="btn btn-outline-secondary" onClick={handleCreateAccount}>Create Account</button>
             </div>
           </form>
         </div>
