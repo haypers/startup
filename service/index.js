@@ -527,6 +527,9 @@ const handlePixelClick = async (id) => {
     const newBorderColor = adjustLightness(newColor, -40);
     const token = localStorage.getItem('token'); // Get token from local storage
 
+    // Log the token to check if it is being retrieved
+    console.log('Token from local storage:', token);
+
     // Update the local state first for immediate feedback
     setPixels((currentPixels) => {
       const updatedPixels = [...currentPixels];
