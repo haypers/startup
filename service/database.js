@@ -118,41 +118,67 @@ async function saveColors(colorOfTheDay, colorPalette) {
 
 // Get all history images
 async function getHistoryImages(limit = 50) {
-  return await historyCollection
-    .find({})
-    .sort({ timestamp: -1 }) // Sort by newest first
-    .limit(limit)
-    .toArray();
+  try {
+    return await historyCollection
+      .find({})
+      .sort({ timestamp: -1 }) // Sort by newest first
+      .limit(limit)
+      .toArray();
+  } catch (error) {
+    console.error('Error getting history images:', error);
+    return [];
+  }
+}
+
+// Get a single history image by ID
+async function getHistoryImage(id) {
+  try {
+    return await historyCollection.findOne({ _id: new ObjectId(id) });
+  } catch (error) {
+    console.error('Error getting history image:', error);
+    return null;
+  }
 }
 
 // Save a new history image
 async function saveHistoryImage(imageData) {
-  const result = await historyCollection.insertOne({
-    timestamp: Date.now(),
-    imageData: imageData,
-    date: new Date()
-  });
-  
-  return result.insertedId;
+  try {
+    const result = await historyCollection.insertOne({
+      timestamp: Date.now(),
+      imageData: imageData,
+      date: new Date()
+    });
+    
+    return result.insertedId;
+  } catch (error) {
+    console.error('Error saving history image:', error);
+    throw error;
+  }
 }
 
 // Delete old history images, keeping only the most recent ones
 async function pruneHistoryImages(keepCount) {
-  // Find the timestamp of the Nth newest image
-  const images = await historyCollection
-    .find({})
-    .sort({ timestamp: -1 })
-    .skip(keepCount - 1)
-    .limit(1)
-    .toArray();
-  
-  if (images.length > 0) {
-    const oldestToKeep = images[0].timestamp;
-    const result = await historyCollection.deleteMany({ timestamp: { $lt: oldestToKeep } });
-    return result.deletedCount;
+  try {
+    // Find the timestamp of the Nth newest image
+    const images = await historyCollection
+      .find({})
+      .sort({ timestamp: -1 })
+      .skip(keepCount - 1)
+      .limit(1)
+      .toArray();
+    
+    if (images.length > 0) {
+      const oldestToKeep = images[0].timestamp;
+      const result = await historyCollection.deleteMany({ timestamp: { $lt: oldestToKeep } });
+      console.log(`Pruned ${result.deletedCount} old images from database`);
+      return result.deletedCount;
+    }
+    
+    return 0;
+  } catch (error) {
+    console.error('Error pruning history images:', error);
+    return 0;
   }
-  
-  return 0;
 }
 
 module.exports = {
@@ -173,6 +199,7 @@ module.exports = {
   
   // History image operations
   getHistoryImages,
+  getHistoryImage,
   saveHistoryImage,
   pruneHistoryImages
 };

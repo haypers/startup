@@ -21,7 +21,7 @@ app.use(cookieParser());
 
 // from requirments.
 const port = process.env.PORT || 4000; // Use environment variable or default to 4000
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '..', 'build')));
 
 // Router for service endpoints
 var apiRouter = express.Router();
@@ -240,7 +240,7 @@ function generateColorPalette(color) {
   }
 }
 
-// Function to fetch color of the day from zoodinkers
+// Function to fetch color of the day from zoodinkers using a CORS proxy
 async function fetchColorOfTheDay() {
   try {
     // Check if we already have colors in the database
@@ -259,20 +259,30 @@ async function fetchColorOfTheDay() {
       }
     }
     
-    // Otherwise fetch new colors
-    const response = await fetch('https://www.zoodinkers.com/color-of-the-day.json');
+    // Use a CORS proxy to avoid certificate issues
+    const proxyUrl = 'https://api.allorigins.win/get?url=';
+    const apiUrl = 'http://colors.zoodinkers.com/api';
+    const encodedApiUrl = encodeURIComponent(apiUrl);
+    
+    const response = await fetch(`${proxyUrl}${encodedApiUrl}`);
     
     if (response.ok) {
       const data = await response.json();
-      const newColor = data.color;
-      
-      if (newColor !== colorOfTheDay) {
-        colorOfTheDay = newColor;
-        generateColorPalette(colorOfTheDay);
-        console.log('Updated color of the day:', colorOfTheDay);
+      if (data && data.contents) {
+        // The actual API response is in the contents property
+        const parsedContents = JSON.parse(data.contents);
+        const newColor = parsedContents.hex;
         
-        // Save to database
-        await DB.saveColors(colorOfTheDay, colorPalette);
+        if (newColor !== colorOfTheDay) {
+          colorOfTheDay = newColor;
+          generateColorPalette(colorOfTheDay);
+          console.log('Updated color of the day:', colorOfTheDay);
+          
+          // Save to database
+          await DB.saveColors(colorOfTheDay, colorPalette);
+        }
+      } else {
+        throw new Error('Invalid response format from proxy');
       }
     } else {
       console.error('Failed to fetch color of the day');
@@ -280,12 +290,21 @@ async function fetchColorOfTheDay() {
   } catch (error) {
     console.error('Error fetching color of the day:', error);
     
-    // Check if we have colors in the database as a fallback
-    const dbColors = await DB.getColors();
-    if (dbColors) {
-      colorOfTheDay = dbColors.colorOfTheDay;
-      colorPalette = dbColors.colorPalette;
-      console.log('Using fallback colors from database:', colorOfTheDay);
+    // Fallback: use a fixed color if nothing in DB or error occurs
+    if (!colorOfTheDay || colorOfTheDay === '#FFFFFF') {
+      colorOfTheDay = '#3498DB'; // Nice blue default color
+      generateColorPalette(colorOfTheDay);
+      console.log('Using fallback default color:', colorOfTheDay);
+      
+      // Optionally save this fallback to DB
+      try {
+        await DB.saveColors(colorOfTheDay, colorPalette);
+      } catch (saveError) {
+        console.error('Error saving fallback colors:', saveError);
+      }
+    } else {
+      // Use what we already had in memory
+      console.log('Using previously loaded color:', colorOfTheDay);
     }
   }
 }
@@ -329,7 +348,7 @@ setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
 const Hour = 60 * 60 * 1000;
 setInterval(fetchColorOfTheDay, Hour);
 
-// Function to generate and save image if needed
+// Function to generate and save image if needed - DATABASE ONLY VERSION
 let lastSavedPixelState = null;
 
 async function generateAndSaveImageIfNeeded() {
@@ -365,24 +384,12 @@ async function generateAndSaveImageIfNeeded() {
     // Convert to PNG buffer
     const buffer = canvas.toBuffer('image/png');
     
-    // Save to database
+    // Save ONLY to database
     await DB.saveHistoryImage(buffer.toString('base64'));
     console.log('Generated and saved new history image to database');
     
-    // Also save to filesystem for immediate access
-    const imageDir = path.join(process.cwd(), 'public', 'images');
-    if (!fs.existsSync(imageDir)) {
-      fs.ensureDirSync(imageDir);
-    }
-    
-    const timestamp = Date.now();
-    const fileName = `pixel-art-${timestamp}.png`;
-    const filePath = path.join(imageDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-    
-    // Prune old images in both database and filesystem
+    // Prune old images in database
     await DB.pruneHistoryImages(50);
-    pruneOldImages(50); // Filesystem pruning
   } catch (error) {
     console.error('Error generating or saving image:', error);
   }
@@ -414,7 +421,8 @@ apiRouter.get('/db-images', async (req, res) => {
 // API endpoint to get a specific image from database
 apiRouter.get('/db-images/:id', async (req, res) => {
   try {
-    const image = await historyCollection.findOne({ _id: new ObjectId(req.params.id) });
+    // Use DB method instead of direct collection access
+    const image = await DB.getHistoryImage(req.params.id);
     if (!image) {
       return res.status(404).send({ msg: 'Image not found' });
     }
@@ -425,32 +433,9 @@ apiRouter.get('/db-images/:id', async (req, res) => {
     res.send(buffer);
   } catch (error) {
     console.error('Error retrieving image from database:', error);
-    res.status(500).send({ msg: 'Failed to retrieve image' });
+    res.status(500).send({ msg: 'Failed to retrieve image', error: error.message });
   }
 });
-
-// Prune old images
-function pruneOldImages(keepCount) {
-  try {
-    const files = fs.readdirSync(imageDir)
-      .filter(file => file.startsWith('pixel-art-'))
-      .sort((a, b) => b.localeCompare(a));
-
-    if (files.length > keepCount) {
-      files.slice(keepCount).forEach(file => {
-        fs.unlinkSync(path.join(imageDir, file));
-        console.log(`Deleted old image: ${file}`);
-      });
-    }
-  } catch (error) {
-    console.error('Error pruning old images:', error);
-  }
-}
-
-// Create image directory in a location that will work in production
-const imageDir = path.join(process.cwd(), 'public', 'images');
-fs.ensureDirSync(imageDir);
-console.log(`Created/verified image directory at: ${imageDir}`);
 
 // Default error handler
 app.use(function (err, req, res, next) {
@@ -460,7 +445,7 @@ app.use(function (err, req, res, next) {
 
 // Return the application's default page if the path is unknown
 app.use((_req, res) => {
-  res.sendFile('index.html', { root: 'public' });
+  res.sendFile('index.html', { root: path.join(__dirname, '..', 'build') });
 });
 
 async function createUser(email, password) {
