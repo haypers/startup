@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './pixels.css';
 
-export function Pixels({ signedIn }) {
+export function Pixels({ signedIn, setSignedIn }) {
   const [pixels, setPixels] = useState([]);
   const [colorOfTheDay, setColorOfTheDay] = useState('');
   const [colorPalette, setColorPalette] = useState([]);
@@ -135,73 +135,80 @@ export function Pixels({ signedIn }) {
     }
   };
 
-  const handlePixelClick = async (id) => {
-    // Check authentication
-    if (!signedIn) {
+  // Modify handlePixelClick function
+const handlePixelClick = async (id) => {
+  if (!signedIn) {
+    setShowAuthModal(true);
+    return;
+  }
+
+  if (!isPlanningMode && !canPaint) {
+    console.log('Cannot paint yet, timer is still running');
+    return;
+  }
+
+  try {
+    const newColor = brushColor;
+    const newBorderColor = adjustLightness(newColor, -40);
+    
+    // Get token from localStorage - retrieve fresh every time
+    const token = localStorage.getItem('token');
+    console.log('Token from localStorage:', token ? `${token.substring(0, 5)}...` : 'null');
+
+    if (!token) {
+      console.error('No authentication token found in localStorage');
       setShowAuthModal(true);
       return;
     }
-  
-    // Check if timer is not 0 and not in planning mode
-    if (!isPlanningMode && !canPaint) {
-      console.log('Cannot paint yet, timer is still running');
-      return;
-    }
-  
-    try {
-      const newColor = brushColor;
-      const newBorderColor = adjustLightness(newColor, -40);
-      
-      // Update the local state first for immediate feedback
-      setPixels(currentPixels => {
-        const updatedPixels = [...currentPixels];
-        const pixel = updatedPixels.find(p => p.id === id);
-        if (pixel) {
-          pixel.color = newColor;
-          pixel.borderColor = newBorderColor;
-          pixel.lastChangedBy = username;
-        }
-        return updatedPixels;
-      });
-      
-      // If in planning mode, just update local state
-      if (isPlanningMode) {
-        // Handle planning mode logic
-        return;
+
+    // Update the local state first for immediate feedback
+    setPixels((currentPixels) => {
+      const updatedPixels = [...currentPixels];
+      const pixel = updatedPixels.find((p) => p.id === id);
+      if (pixel) {
+        pixel.color = newColor;
+        pixel.borderColor = newBorderColor;
+        pixel.lastChangedBy = username;
       }
-      
-      // Normal mode - update on the server
-      const response = await fetch(`/api/pixels/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Ensure cookies are sent
-        body: JSON.stringify({
-          color: newColor,
-          borderColor: newBorderColor,
-          lastChangedBy: username,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
-      
-      // Reset timer after successful pixel update
-      setTimer(15);
-      setCanPaint(false);
-      setTimerMessage("Draw a pixel in:");
-      setSubMessage("15 seconds");
-      
-      console.log('Pixel updated successfully');
-    } catch (error) {
-      console.error('Failed to update pixel on the server', error);
-      
-      // Revert the local change if the server update fails
-      fetchPixels();
+      return updatedPixels;
+    });
+
+    console.log(`Sending request to update pixel ${id} with auth token: ${token.substring(0, 5)}...`);
+    
+    // Send the request with the token in the Authorization header
+    const response = await fetch(`/api/pixels/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Include token in Authorization header
+      },
+      body: JSON.stringify({
+        color: newColor,
+        borderColor: newBorderColor,
+        lastChangedBy: username,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Server returned error ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Server returned ${response.status}: ${errorData.msg || ''}`);
     }
-  };
+
+    console.log('Pixel updated successfully');
+    
+    // Reset timer after successful pixel update
+    setTimer(15);
+    setCanPaint(false);
+    setTimerMessage("Draw a pixel in:");
+    setSubMessage("15 seconds");
+  } catch (error) {
+    console.error('Failed to update pixel on the server', error);
+    
+    // Revert the local change if the server update fails
+    fetchPixels();
+  }
+};
 
   const togglePlanningMode = () => {
     setIsPlanningMode((prevMode) => {
@@ -221,6 +228,37 @@ export function Pixels({ signedIn }) {
       return !prevMode;
     });
   };
+
+  // Add this to App.jsx or wherever you manage auth state
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    
+    if (token && username) {
+      console.log(`Found stored credentials for ${username}`);
+      // Validate the token with the server
+      fetch('/api/auth/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          setSignedIn(true);
+          console.log('Auto-login successful');
+        } else {
+          // Clear invalid credentials
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+          setSignedIn(false);
+          console.log('Stored credentials were invalid');
+        }
+      })
+      .catch(error => {
+        console.error('Error checking auth status:', error);
+      });
+    }
+  }, []);
 
   return (
     <main className="container-fluid bg-secondary text-center">

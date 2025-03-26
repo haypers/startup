@@ -96,7 +96,9 @@ export function Signin({ onAuthChange }) {
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -108,16 +110,28 @@ export function Signin({ onAuthChange }) {
 
       if (response.ok) {
         const data = await response.json();
-        // Store the token in local storage
+        console.log('Login response:', data); // Debug the response
+        
+        // Store token in localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.email);
-        setSignedIn(true);
+        
+        // Log that we stored the token
+        console.log('Token stored in localStorage:', data.token);
+        
+        // Tell the parent component that the user is signed in
+        if (onSignIn) {
+          onSignIn(true);
+        }
+        
+        // Navigate to the pixels page
         navigate('/pixels');
       } else {
-        setError('Invalid credentials');
+        setLoginError('Invalid credentials');
       }
     } catch (error) {
-      setError('Login failed');
+      console.error('Login error:', error);
+      setLoginError('Login failed. Please try again.');
     }
   };
 

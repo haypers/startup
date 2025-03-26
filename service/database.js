@@ -32,7 +32,10 @@ function getUser(email) {
 // Get user by token
 async function getUserByToken(token) {
   try {
-    return await userCollection.findOne({ token: token });
+    console.log(`Looking up user with token starting with ${token?.substring(0, 5) || 'undefined'}`);
+    const user = await userCollection.findOne({ token: token });
+    console.log(`User lookup result: ${user ? 'User found' : 'No user found'}`);
+    return user;
   } catch (error) {
     console.error('Error getting user by token:', error);
     return null;
@@ -49,6 +52,22 @@ async function addUser(user) {
 async function updateUser(user) {
   await userCollection.updateOne({ email: user.email }, { $set: user });
   return user;
+}
+
+// Add this function
+async function updateUserToken(email, token) {
+  try {
+    const result = await userCollection.updateOne(
+      { email: email },
+      { $set: { token: token } }
+    );
+    
+    console.log(`Updated token for user ${email}: ${result.modifiedCount > 0 ? 'success' : 'failed'}`);
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error('Error updating user token:', error);
+    return false;
+  }
 }
 
 // ===== PIXEL GRID OPERATIONS =====
@@ -205,6 +224,7 @@ module.exports = {
   getUserByToken,
   addUser,
   updateUser,
+  updateUserToken,
   
   // Pixel grid operations
   getPixels,

@@ -6,6 +6,7 @@ import { Signin, logoutUser, checkAuthStatus } from './signin/signin'; // Import
 import { Pixels } from './pixels/pixels';
 import { History } from './history/history';
 import { About } from './about/about';
+import { AuthProvider } from './authContext';
 
 const AuthState = {
   Unknown: 'Unknown',
@@ -31,6 +32,36 @@ export default function App() {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    
+    if (token && username) {
+      console.log(`Found stored credentials for ${username}`);
+      // Validate the token with the server
+      fetch('/api/auth/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          setSignedIn(true);
+          console.log('Auto-login successful');
+        } else {
+          // Clear invalid credentials
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+          setSignedIn(false);
+          console.log('Stored credentials were invalid');
+        }
+      })
+      .catch(error => {
+        console.error('Error checking auth status:', error);
+      });
+    }
+  }, []);
+
   const handleAuthChange = (userName, authState) => {
     setAuthState(authState);
     setUserName(userName);
@@ -43,74 +74,76 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <div className="body bg-dark text-light">
-        <header>
-          <h1>The Public Pixel</h1>
-          <nav>
-            <ul>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="">
-                  The Pixels
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="about">
-                  About
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="history">
-                  Art History
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                {authState === AuthState.Authenticated ? (
-                  <NavLink
-                    className="nav-link"
-                    to=""
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleLogout();
-                    }}
-                  >
-                    Logout
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="body bg-dark text-light">
+          <header>
+            <h1>The Public Pixel</h1>
+            <nav>
+              <ul>
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="">
+                    The Pixels
                   </NavLink>
-                ) : (
-                  <NavLink className="nav-link" to="signin">
-                    Sign In
+                </li>
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="about">
+                    About
                   </NavLink>
-                )}
-              </li>
-            </ul>
-          </nav>
-        </header>
+                </li>
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="history">
+                    Art History
+                  </NavLink>
+                </li>
+                <li className="nav-item">
+                  {authState === AuthState.Authenticated ? (
+                    <NavLink
+                      className="nav-link"
+                      to=""
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleLogout();
+                      }}
+                    >
+                      Logout
+                    </NavLink>
+                  ) : (
+                    <NavLink className="nav-link" to="signin">
+                      Sign In
+                    </NavLink>
+                  )}
+                </li>
+              </ul>
+            </nav>
+          </header>
 
-        <Routes>
-          <Route
-            path="/"
-            element={<Pixels signedIn={authState === AuthState.Authenticated} />}
-            exact
-          />
-          <Route
-            path="/signin"
-            element={
-              <Signin
-                onAuthChange={handleAuthChange}
-              />
-            }
-          />
-          <Route path="/about" element={<About />} />
-          <Route path="/history" element={<History />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+          <Routes>
+            <Route
+              path="/"
+              element={<Pixels signedIn={authState === AuthState.Authenticated} />}
+              exact
+            />
+            <Route
+              path="/signin"
+              element={
+                <Signin
+                  onAuthChange={handleAuthChange}
+                />
+              }
+            />
+            <Route path="/about" element={<About />} />
+            <Route path="/history" element={<History />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
 
-        <footer>
-          <span className="text-reset">Author Name:</span>
-          <a href="https://github.com/haypers/startup">Hayden Perkes</a>
-        </footer>
-      </div>
-    </BrowserRouter>
+          <footer>
+            <span className="text-reset">Author Name:</span>
+            <a href="https://github.com/haypers/startup">Hayden Perkes</a>
+          </footer>
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

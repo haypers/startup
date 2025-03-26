@@ -49,9 +49,17 @@ apiRouter.post('/auth/login', async (req, res) => {
     const user = await findUser('email', req.body.email);
     if (user) {
       if (await bcrypt.compare(req.body.password, user.password)) {
-        user.token = uuid.v4();
+        const newToken = uuid.v4();
+        
+        // Update the token in the database
+        await DB.updateUserToken(user.email, newToken);
+        
         // Send the token in the response body
-        res.send({ email: user.email, token: user.token });
+        console.log(`Login successful for ${user.email}, token: ${newToken.substring(0, 5)}...`);
+        res.send({ 
+          email: user.email, 
+          token: newToken  // Make sure this is the NEW token
+        });
         return;
       }
     }
@@ -107,26 +115,50 @@ apiRouter.get('/auth/debug', (req, res) => {
   });
 });
 
+// Add this route to help debug token issues
+apiRouter.get('/auth/debug', (req, res) => {
+  const authHeader = req.headers.authorization || 'none';
+  const token = req.headers.authorization?.split(' ')[1] || null;
+  
+  res.json({
+    authHeader,
+    token: token ? `${token.substring(0, 5)}...` : null,
+    allHeaders: req.headers,
+  });
+});
+
 // Middleware to verify that the user is authorized to call an endpoint
 async function verifyAuth(req, res, next) {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    console.log('Token from header:', token); // Debugging log
+    // Log all headers to debug
+    console.log('Request headers:', JSON.stringify(req.headers));
+    
+    const authHeader = req.headers.authorization;
+    console.log('Authorization header:', authHeader);
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).send({ msg: 'Unauthorized - Invalid authorization format' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    console.log('Token from header:', token ? `${token.substring(0, 5)}...` : 'undefined');
+    
     if (!token) {
-      return res.status(401).send({ msg: 'Unauthorized' });
+      return res.status(401).send({ msg: 'Unauthorized - No token provided' });
     }
 
     const user = await DB.getUserByToken(token);
-    console.log('User from token:', user); // Debugging log
+    console.log('User from token:', user ? `Found user: ${user.email}` : 'No user found');
+    
     if (!user) {
-      return res.status(401).send({ msg: 'Unauthorized' });
+      return res.status(401).send({ msg: 'Unauthorized - Invalid token' });
     }
 
     req.user = user;
     next();
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(401).send({ msg: 'Unauthorized' });
+    res.status(401).send({ msg: 'Unauthorized - Authentication error' });
   }
 }
 
