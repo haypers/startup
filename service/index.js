@@ -5,6 +5,7 @@ const uuid = require('uuid');
 const { createCanvas } = require('canvas');
 const fs = require('fs-extra');
 const path = require('path');
+const { ObjectId } = require('mongodb');
 const app = express();
 const DB = require('./database.js');
 
@@ -111,45 +112,79 @@ const verifyAuth = async (req, res, next) => {
   }
 };
 
-let pixels = []; // Store the pixel grid on the server
+// In index.js - Initialize or load pixels from DB
+let pixels = [];
 
-// Fetch or initialize pixels
-apiRouter.get('/pixels', (req, res) => {
-  if (pixels.length === 0) {
-    // Generate a 50x50 grid of pixels
-    for (let i = 0; i < 2500; i++) {
-      const r = Math.floor(Math.random() * 256);
-      const g = Math.floor(Math.random() * 256);
-      const b = Math.floor(Math.random() * 256);
-      const color = rgbToHex(r, g, b);
-      const borderColor = adjustLightness(color, -40);
+// Load pixels from database on startup
+async function initializePixels() {
+  try {
+    pixels = await DB.getPixels();
+    
+    // If no pixels found in the database, create a new grid
+    if (pixels.length === 0) {
+      console.log("No pixels found in DB, generating new grid");
+      
+      // Generate a 50x50 grid of pixels
+      for (let i = 0; i < 2500; i++) {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        const color = rgbToHex(r, g, b);
+        const borderColor = adjustLightness(color, -40);
 
-      pixels.push({
-        id: i,
-        color: color,
-        borderColor: borderColor,
-        lastChangedBy: null, // No user has changed this pixel yet
-      });
+        pixels.push({
+          id: i,
+          color: color,
+          borderColor: borderColor,
+          lastChangedBy: null,
+        });
+      }
+      
+      // Save the new grid to the database
+      await DB.savePixels(pixels);
+    } else {
+      console.log(`Loaded ${pixels.length} pixels from database`);
     }
+  } catch (error) {
+    console.error('Error loading pixels from database:', error);
+    
+    // Fallback to an empty grid
+    pixels = [];
   }
-  res.send(pixels);
-});
+}
 
-apiRouter.put('/pixels/:id', verifyAuth, (req, res) => {
-  const pixelId = parseInt(req.params.id);
-  const { color, borderColor } = req.body;
+// Call initialization function at startup
+initializePixels();
 
-  const pixel = pixels.find((p) => p.id === pixelId);
-  if (!pixel) {
-    return res.status(404).send({ msg: 'Pixel not found' });
+// Update the pixel update API endpoint
+apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
+  try {
+    const pixelId = parseInt(req.params.id);
+    const { color, borderColor, lastChangedBy } = req.body;
+
+    const pixel = pixels.find((p) => p.id === pixelId);
+    if (!pixel) {
+      return res.status(404).send({ msg: 'Pixel not found' });
+    }
+
+    // Update the pixel state in memory
+    pixel.color = color;
+    pixel.borderColor = borderColor;
+    pixel.lastChangedBy = lastChangedBy;
+
+    // Update the pixel in the database
+    await DB.updatePixel(pixelId, {
+      id: pixelId,
+      color: color,
+      borderColor: borderColor,
+      lastChangedBy: lastChangedBy
+    });
+
+    res.status(200).send(pixel);
+  } catch (error) {
+    console.error('Error updating pixel:', error);
+    res.status(500).send({ msg: 'Failed to update pixel' });
   }
-
-  // Update the pixel state
-  pixel.color = color;
-  pixel.borderColor = borderColor;
-  pixel.lastChangedBy = req.cookies[authCookieName]; // Track who changed it
-
-  res.status(200).send(pixel); // Respond with the updated pixel
 });
 
 // Color of the day management
@@ -208,33 +243,49 @@ function generateColorPalette(color) {
 // Function to fetch color of the day from zoodinkers
 async function fetchColorOfTheDay() {
   try {
-    const response = await fetch(
-      `https://api.allorigins.win/get?url=${encodeURIComponent(
-        'http://colors.zoodinkers.com/api'
-      )}`
-    );
+    // Check if we already have colors in the database
+    const dbColors = await DB.getColors();
+    if (dbColors) {
+      const lastUpdated = new Date(dbColors.lastUpdated);
+      const now = new Date();
+      const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
+      
+      // If it's been less than 24 hours since the last update, use the stored colors
+      if (hoursSinceUpdate < 24) {
+        colorOfTheDay = dbColors.colorOfTheDay;
+        colorPalette = dbColors.colorPalette;
+        console.log('Using colors from database:', colorOfTheDay);
+        return;
+      }
+    }
+    
+    // Otherwise fetch new colors
+    const response = await fetch('https://www.zoodinkers.com/color-of-the-day.json');
     
     if (response.ok) {
       const data = await response.json();
-      const parsedData = JSON.parse(data.contents);
-      const newColor = parsedData.hex;
+      const newColor = data.color;
       
-      // Only update if the color has changed
       if (newColor !== colorOfTheDay) {
         colorOfTheDay = newColor;
         generateColorPalette(colorOfTheDay);
         console.log('Updated color of the day:', colorOfTheDay);
+        
+        // Save to database
+        await DB.saveColors(colorOfTheDay, colorPalette);
       }
     } else {
       console.error('Failed to fetch color of the day');
     }
   } catch (error) {
     console.error('Error fetching color of the day:', error);
-    // Set a fallback color if fetch fails
-    if (colorOfTheDay === '#FFFFFF') {
-      colorOfTheDay = '#3498DB'; // Fallback to a nice blue
-      generateColorPalette(colorOfTheDay);
-      console.log('Using fallback color:', colorOfTheDay);
+    
+    // Check if we have colors in the database as a fallback
+    const dbColors = await DB.getColors();
+    if (dbColors) {
+      colorOfTheDay = dbColors.colorOfTheDay;
+      colorPalette = dbColors.colorPalette;
+      console.log('Using fallback colors from database:', colorOfTheDay);
     }
   }
 }
@@ -274,54 +325,109 @@ fetchColorOfTheDay().then(() => {
 // Set up timer to check for color updates every 30 minutes
 setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
 
+// Set up timer to check for color updates every day
+const Hour = 60 * 60 * 1000;
+setInterval(fetchColorOfTheDay, Hour);
+
 // Function to generate and save image if needed
 let lastSavedPixelState = null;
 
 async function generateAndSaveImageIfNeeded() {
   try {
-    if (!fs.existsSync(imageDir)) {
-      console.log('Image directory not found, creating it...');
-      fs.ensureDirSync(imageDir);
-    }
-
     if (pixels.length === 0) {
       console.log('Pixels array is not initialized. Skipping image generation.');
       return;
     }
-
+    
+    // Serialize current pixel state
     const currentPixelState = JSON.stringify(pixels);
-
+    
+    // Compare with last saved state
     if (currentPixelState === lastSavedPixelState) {
       console.log('No changes detected in pixel state. Skipping image generation.');
       return;
     }
-
+    
+    // Update the last saved state
     lastSavedPixelState = currentPixelState;
-
+    
+    // Create canvas and draw pixels
     const canvas = createCanvas(50, 50);
     const ctx = canvas.getContext('2d');
-
+    
     pixels.forEach((pixel) => {
       const x = pixel.id % 50;
       const y = Math.floor(pixel.id / 50);
       ctx.fillStyle = pixel.color;
       ctx.fillRect(x, y, 1, 1);
     });
-
+    
+    // Convert to PNG buffer
+    const buffer = canvas.toBuffer('image/png');
+    
+    // Save to database
+    await DB.saveHistoryImage(buffer.toString('base64'));
+    console.log('Generated and saved new history image to database');
+    
+    // Also save to filesystem for immediate access
+    const imageDir = path.join(process.cwd(), 'public', 'images');
+    if (!fs.existsSync(imageDir)) {
+      fs.ensureDirSync(imageDir);
+    }
+    
     const timestamp = Date.now();
     const fileName = `pixel-art-${timestamp}.png`;
     const filePath = path.join(imageDir, fileName);
-
-    const buffer = canvas.toBuffer('image/png');
     fs.writeFileSync(filePath, buffer);
-
-    console.log(`Generated new image: ${fileName}`);
-
-    pruneOldImages(50);
+    
+    // Prune old images in both database and filesystem
+    await DB.pruneHistoryImages(50);
+    pruneOldImages(50); // Filesystem pruning
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error('Error generating or saving image:', error);
   }
 }
+
+// Initialize image generation on server start
+generateAndSaveImageIfNeeded();
+
+// Set up timer to generate images every 5 minutes
+const FIVE_MINUTES = 5 * 60 * 1000;
+setInterval(generateAndSaveImageIfNeeded, FIVE_MINUTES);
+
+// API endpoint to get images from database
+apiRouter.get('/db-images', async (req, res) => {
+  try {
+    const images = await DB.getHistoryImages();
+    res.json(images.map(img => ({
+      id: img._id.toString(),
+      timestamp: img.timestamp,
+      date: img.date,
+      url: `/api/db-images/${img._id}`
+    })));
+  } catch (error) {
+    console.error('Error retrieving images from database:', error);
+    res.status(500).send({ msg: 'Failed to retrieve images' });
+  }
+});
+
+// API endpoint to get a specific image from database
+apiRouter.get('/db-images/:id', async (req, res) => {
+  try {
+    const image = await historyCollection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!image) {
+      return res.status(404).send({ msg: 'Image not found' });
+    }
+    
+    // Convert base64 back to binary
+    const buffer = Buffer.from(image.imageData, 'base64');
+    res.setHeader('Content-Type', 'image/png');
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error retrieving image from database:', error);
+    res.status(500).send({ msg: 'Failed to retrieve image' });
+  }
+});
 
 // Prune old images
 function pruneOldImages(keepCount) {
@@ -346,52 +452,6 @@ const imageDir = path.join(process.cwd(), 'public', 'images');
 fs.ensureDirSync(imageDir);
 console.log(`Created/verified image directory at: ${imageDir}`);
 
-// Initialize image generation on server start
-generateAndSaveImageIfNeeded();
-
-// Set up timer to generate images every 5 minutes
-const FIVE_MINUTES = 30 * 60 * 1000; //1 should be a 5
-setInterval(generateAndSaveImageIfNeeded, FIVE_MINUTES);
-
-// Endpoint to get list of all saved images
-apiRouter.get('/images', (req, res) => {
-  try {
-    const files = fs.readdirSync(imageDir)
-      .filter(file => file.startsWith('pixel-art-'))
-      .map(file => {
-        const timestamp = parseInt(file.replace('pixel-art-', '').replace('.png', ''), 10);
-        return {
-          filename: file,
-          timestamp: timestamp,
-          url: `/images/${file}`
-        };
-      })
-      .sort((a, b) => b.timestamp - a.timestamp);
-
-    res.json(files);
-  } catch (error) {
-    console.error('Error getting image list:', error);
-    res.status(500).send({ msg: 'Failed to get image list' });
-  }
-});
-
-// Endpoint to get a specific image by filename
-apiRouter.get('/images/:filename', (req, res) => {
-  try {
-    const filePath = path.join(imageDir, req.params.filename);
-    
-    if (fs.existsSync(filePath)) {
-      res.setHeader('Content-Type', 'image/png');
-      res.sendFile(filePath);
-    } else {
-      res.status(404).send({ msg: 'Image not found' });
-    }
-  } catch (error) {
-    console.error('Error serving image:', error);
-    res.status(500).send({ msg: 'Failed to serve image' });
-  }
-});
-
 // Default error handler
 app.use(function (err, req, res, next) {
   console.error('Express App Error:', err);
@@ -411,15 +471,20 @@ async function createUser(email, password) {
     password: passwordHash,
     token: uuid.v4(),
   };
-  users.push(user);
-
-  return user;
+  
+  return await DB.addUser(user);
 }
 
 async function findUser(field, value) {
   if (!value) return null;
 
-  return users.find((u) => u[field] === value);
+  if (field === 'email') {
+    return await DB.getUser(value);
+  } else if (field === 'token') {
+    return await DB.getUserByToken(value);
+  }
+  
+  return null;
 }
 
 // setAuthCookie in the HTTP response
