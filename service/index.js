@@ -9,7 +9,7 @@ const { ObjectId } = require('mongodb');
 const app = express();
 const DB = require('./database.js');
 
-//using simon code
+// Using simon code
 let users = [];
 const authCookieName = 'token';
 
@@ -19,9 +19,8 @@ app.use(express.json());
 // Use the cookie parser middleware for tracking authentication tokens
 app.use(cookieParser());
 
-// from requirments.
+// From requirements
 const port = process.env.PORT || 4000; // Use environment variable or default to 4000
-app.use(express.static(path.join(__dirname, '..', 'build')));
 
 // Router for service endpoints
 var apiRouter = express.Router();
@@ -123,22 +122,14 @@ apiRouter.get('/auth/status', async (req, res) => {
 
 // Add a debug route
 apiRouter.get('/auth/debug', (req, res) => {
-  const token = req.cookies[authCookieName];
-  res.json({
-    hasCookie: !!token,
-    cookieValue: token ? token.substring(0, 5) + '...' : 'none',
-    headers: req.headers,
-  });
-});
-
-// Add this route to help debug token issues
-apiRouter.get('/auth/debug', (req, res) => {
   const authHeader = req.headers.authorization || 'none';
   const token = req.headers.authorization?.split(' ')[1] || null;
+  const cookieToken = req.cookies[authCookieName];
   
   res.json({
     authHeader,
     token: token ? `${token.substring(0, 5)}...` : null,
+    cookieToken: cookieToken ? `${cookieToken.substring(0, 5)}...` : null,
     allHeaders: req.headers,
   });
 });
@@ -299,12 +290,11 @@ function rgbToHex(r, g, b) {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
-// Function to generate color palette from base color - EXACT MATCH to frontend logic
+// Function to generate color palette from base color
 function generateColorPalette(color) {
   try {
     const rgb = hexToRgb(color);
     
-    // Create the exact same variations as in the frontend
     const washedOut = rgbToHex(
       Math.min(255, rgb.r + 150),
       Math.min(255, rgb.g + 150),
@@ -411,10 +401,6 @@ fetchColorOfTheDay().then(() => {
 // Set up timer to check for color updates every 30 minutes
 setInterval(checkAndUpdateColor, COLOR_FETCH_INTERVAL);
 
-// Set up timer to check for color updates every day
-const Hour = 60 * 60 * 1000;
-setInterval(fetchColorOfTheDay, Hour);
-
 // Function to generate and save image if needed - DATABASE ONLY VERSION
 let lastSavedPixelState = null;
 
@@ -488,7 +474,6 @@ apiRouter.get('/db-images', async (req, res) => {
 // API endpoint to get a specific image from database
 apiRouter.get('/db-images/:id', async (req, res) => {
   try {
-    // Use DB method instead of direct collection access
     const image = await DB.getHistoryImage(req.params.id);
     if (!image) {
       return res.status(404).send({ msg: 'Image not found' });
@@ -504,17 +489,7 @@ apiRouter.get('/db-images/:id', async (req, res) => {
   }
 });
 
-// Default error handler
-app.use(function (err, req, res, next) {
-  console.error('Express App Error:', err);
-  res.status(500).send({ type: err.name, message: err.message });
-});
-
-// Optionally replace with a simple API response
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
+// Helper functions
 async function createUser(email, password) {
   const passwordHash = await bcrypt.hash(password, 10);
 
@@ -550,77 +525,27 @@ function adjustLightness(color, amount) {
 // Global error handlers
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
-  process.exit(1); // Exit application
+  // Don't exit - in production this would restart the server
+  // process.exit(1); 
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1); // Exit application
+  // Don't exit - in production this would restart the server
+  // process.exit(1); 
 });
 
+// Serve static files from the React app build directory
+// IMPORTANT: This must come AFTER API routes
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Important: Catch-all route to return the React app for client-side routing
+// This must be the LAST route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start the server
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
-
-const handlePixelClick = async (id) => {
-  if (!signedIn) {
-    setShowAuthModal(true);
-    return;
-  }
-
-  if (!isPlanningMode && !canPaint) {
-    console.log('Cannot paint yet, timer is still running');
-    return;
-  }
-
-  try {
-    const newColor = brushColor;
-    const newBorderColor = adjustLightness(newColor, -40);
-    const token = localStorage.getItem('token'); // Get token from local storage
-
-    // Log the token to check if it is being retrieved
-    console.log('Token from local storage:', token);
-
-    // Update the local state first for immediate feedback
-    setPixels((currentPixels) => {
-      const updatedPixels = [...currentPixels];
-      const pixel = updatedPixels.find((p) => p.id === id);
-      if (pixel) {
-        pixel.color = newColor;
-        pixel.borderColor = newBorderColor;
-        pixel.lastChangedBy = username;
-      }
-      return updatedPixels;
-    });
-
-    const response = await fetch(`/api/pixels/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // Include token in Authorization header
-      },
-      body: JSON.stringify({
-        color: newColor,
-        borderColor: newBorderColor,
-        lastChangedBy: username,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status}`);
-    }
-
-    // Reset timer after successful pixel update
-    setTimer(15);
-    setCanPaint(false);
-    setTimerMessage("Draw a pixel in:");
-    setSubMessage("15 seconds");
-
-    console.log('Pixel updated successfully');
-  } catch (error) {
-    console.error('Failed to update pixel on the server', error);
-
-    // Revert the local change if the server update fails
-    fetchPixels();
-  }
-};
