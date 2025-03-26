@@ -34,8 +34,8 @@ apiRouter.post('/auth/create', async (req, res) => {
   } else {
     try {
       const user = await createUser(req.body.email, req.body.password);
-      setAuthCookie(res, user.token);
-      res.send({ email: user.email });
+      // Send the token in the response body
+      res.send({ email: user.email, token: user.token });
     } catch (error) {
       console.error('Create User Error:', error);
       res.status(500).send({ msg: 'Failed to create user' });
@@ -50,8 +50,8 @@ apiRouter.post('/auth/login', async (req, res) => {
     if (user) {
       if (await bcrypt.compare(req.body.password, user.password)) {
         user.token = uuid.v4();
-        setAuthCookie(res, user.token);
-        res.send({ email: user.email });
+        // Send the token in the response body
+        res.send({ email: user.email, token: user.token });
         return;
       }
     }
@@ -110,17 +110,19 @@ apiRouter.get('/auth/debug', (req, res) => {
 // Middleware to verify that the user is authorized to call an endpoint
 async function verifyAuth(req, res, next) {
   try {
-    const token = req.cookies[authCookieName]; // Ensure the cookie name matches
+    const token = req.headers.authorization?.split(' ')[1];
+    console.log('Token from header:', token); // Debugging log
     if (!token) {
       return res.status(401).send({ msg: 'Unauthorized' });
     }
 
     const user = await DB.getUserByToken(token);
+    console.log('User from token:', user); // Debugging log
     if (!user) {
       return res.status(401).send({ msg: 'Unauthorized' });
     }
 
-    req.user = user; // Attach user info to the request
+    req.user = user;
     next();
   } catch (error) {
     console.error('Auth error:', error);
@@ -486,16 +488,6 @@ async function findUser(field, value) {
   return null;
 }
 
-// setAuthCookie in the HTTP response
-function setAuthCookie(res, authToken) {
-  res.cookie(authCookieName, authToken, {
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    httpOnly: true, // Prevent client-side JavaScript from accessing the cookie
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
-}
-
 function adjustLightness(color, amount) {
   const num = parseInt(color.slice(1), 16);
   const r = Math.min(255, Math.max(0, (num >> 16) + amount));
@@ -533,6 +525,7 @@ const handlePixelClick = async (id) => {
   try {
     const newColor = brushColor;
     const newBorderColor = adjustLightness(newColor, -40);
+    const token = localStorage.getItem('token'); // Get token from local storage
 
     // Update the local state first for immediate feedback
     setPixels((currentPixels) => {
@@ -550,8 +543,8 @@ const handlePixelClick = async (id) => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Include token in Authorization header
       },
-      credentials: 'include', // Ensure cookies are sent
       body: JSON.stringify({
         color: newColor,
         borderColor: newBorderColor,

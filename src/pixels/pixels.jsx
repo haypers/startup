@@ -141,13 +141,13 @@ export function Pixels({ signedIn }) {
       setShowAuthModal(true);
       return;
     }
-    
+  
     // Check if timer is not 0 and not in planning mode
     if (!isPlanningMode && !canPaint) {
       console.log('Cannot paint yet, timer is still running');
       return;
     }
-
+  
     try {
       const newColor = brushColor;
       const newBorderColor = adjustLightness(newColor, -40);
@@ -176,12 +176,12 @@ export function Pixels({ signedIn }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Important - this ensures cookies are sent
+        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
           color: newColor,
           borderColor: newBorderColor,
-          lastChangedBy: username
-        })
+          lastChangedBy: username,
+        }),
       });
       
       if (!response.ok) {

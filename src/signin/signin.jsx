@@ -31,6 +31,8 @@ export async function checkAuthStatus() {
 export function Signin({ onAuthChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [signedIn, setSignedIn] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const registerUser = async (email, password) => {
@@ -91,6 +93,31 @@ export function Signin({ onAuthChange }) {
       navigate('/');
     } catch (error) {
       alert(error.message);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Store the token in local storage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.email);
+        setSignedIn(true);
+        navigate('/pixels');
+      } else {
+        setError('Invalid credentials');
+      }
+    } catch (error) {
+      setError('Login failed');
     }
   };
 
