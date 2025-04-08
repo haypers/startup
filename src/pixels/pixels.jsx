@@ -16,6 +16,7 @@ export function Pixels({ signedIn, setSignedIn }) {
   const [plannedPixels, setPlannedPixels] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false); // New state for auth modal
   const [notifications, setNotifications] = useState([]); // New state for notifications
+  const [pendingUpdates, setPendingUpdates] = useState({}); // New state for pending updates
   
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
@@ -273,26 +274,19 @@ const handlePixelClick = async (id) => {
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log('WebSocket message received:', data.type);
       
       if (data.type === 'notification') {
-        // Handle notifications
         setNotifications((prev) => [...prev, data.message]);
       } 
       else if (data.type === 'pixelUpdate') {
-        // Handle single pixel update
-        setPixels(currentPixels => {
-          const newPixels = [...currentPixels];
-          const index = newPixels.findIndex(p => p.id === data.pixelId);
-          if (index !== -1) {
-            newPixels[index] = data.pixel;
-          }
-          return newPixels;
-        });
+        // Add to pending updates instead of immediately updating
+        setPendingUpdates(prev => ({
+          ...prev,
+          [data.pixelId]: data.pixel
+        }));
       }
       else if (data.type === 'fullSync') {
-        // Handle full grid sync
-        console.log('Received full grid sync with', data.pixels.length, 'pixels');
+        // Full syncs still update immediately
         setPixels(data.pixels);
       }
     };
@@ -319,6 +313,31 @@ const handlePixelClick = async (id) => {
       ws.send(JSON.stringify({ type: 'requestSync' }));
     }
   };
+
+  // Use a useEffect with a timer to batch updates
+  useEffect(() => {
+    if (Object.keys(pendingUpdates).length > 0) {
+      const timer = setTimeout(() => {
+        setPixels(currentPixels => {
+          const newPixels = [...currentPixels];
+          
+          // Apply all pending updates
+          Object.entries(pendingUpdates).forEach(([id, pixel]) => {
+            const index = newPixels.findIndex(p => p.id === parseInt(id));
+            if (index !== -1) {
+              newPixels[index] = pixel;
+            }
+          });
+          
+          // Clear pending updates
+          setPendingUpdates({});
+          return newPixels;
+        });
+      }, 50); // Batch updates every 50ms
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pendingUpdates]);
 
   return (
     <main className="container-fluid bg-secondary text-center">
