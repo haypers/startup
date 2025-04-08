@@ -15,6 +15,7 @@ export function Pixels({ signedIn, setSignedIn }) {
   const username = localStorage.getItem('username'); // Retrieve username from local storage
   const [plannedPixels, setPlannedPixels] = useState([]);
   const [showAuthModal, setShowAuthModal] = useState(false); // New state for auth modal
+  const [notifications, setNotifications] = useState([]); // New state for notifications
   
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
@@ -257,6 +258,29 @@ const handlePixelClick = async (id) => {
     }
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Open a WebSocket connection
+    const ws = new WebSocket(`ws://localhost:4000`, token);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'notification') {
+        setNotifications((prev) => [...prev, data.message]); // Add new notification
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   return (
     <main className="container-fluid bg-secondary text-center">
       <div className="UI">
@@ -309,7 +333,13 @@ const handlePixelClick = async (id) => {
               <div>
                 <h3>Notifications:</h3>
                 <ul>
-                  <li>I've got a timer built to simulate Notifications here, but it is super buggy, so I dissabled it by default for now.</li>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification, index) => (
+                      <li key={index}>{notification}</li>
+                    ))
+                  ) : (
+                    <li>No notifications yet.</li>
+                  )}
                 </ul>
               </div>
             </section>

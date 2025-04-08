@@ -8,6 +8,7 @@ const path = require('path');
 const { ObjectId } = require('mongodb');
 const app = express();
 const DB = require('./database.js');
+const WebSocket = require('ws');
 
 // Using simon code
 let users = [];
@@ -227,17 +228,30 @@ apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
       return res.status(404).send({ msg: 'Pixel not found' });
     }
 
+    // Notify the previous user if they are online
+    if (pixel.lastChangedBy && pixel.lastChangedBy !== req.user.email) {
+      const previousUserWs = onlineUsers.get(pixel.lastChangedBy);
+      if (previousUserWs) {
+        previousUserWs.send(
+          JSON.stringify({
+            type: 'notification',
+            message: `${req.user.email} destroyed your pixel`,
+          })
+        );
+      }
+    }
+
     // Update the pixel state in memory
     pixel.color = color;
     pixel.borderColor = borderColor;
-    pixel.lastChangedBy = lastChangedBy;
+    pixel.lastChangedBy = req.user.email;
 
     // Update the pixel in the database
     await DB.updatePixel(pixelId, {
       id: pixelId,
       color: color,
       borderColor: borderColor,
-      lastChangedBy: lastChangedBy
+      lastChangedBy: req.user.email,
     });
 
     res.status(200).send(pixel);
@@ -545,7 +559,42 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start the server
-app.listen(port, () => {
+// Create a WebSocket server
+const wss = new WebSocket.Server({ noServer: true });
+
+// Track online users and their WebSocket connections
+const onlineUsers = new Map(); // Map of `email -> WebSocket`
+
+// Handle WebSocket connections
+wss.on('connection', (ws, req) => {
+  const email = req.email; // Attach the user's email to the WebSocket connection
+  onlineUsers.set(email, ws);
+
+  console.log(`User connected: ${email}`);
+
+  // Handle WebSocket disconnection
+  ws.on('close', () => {
+    onlineUsers.delete(email);
+    console.log(`User disconnected: ${email}`);
+  });
+});
+
+// Upgrade HTTP requests to WebSocket connections
+app.server = app.listen(port, () => {
   console.log(`Listening on port ${port}`);
+});
+
+app.server.on('upgrade', async (req, socket, head) => {
+  const token = req.headers['sec-websocket-protocol']; // Use the token for authentication
+  const user = await findUser('token', token);
+
+  if (!user) {
+    socket.destroy();
+    return;
+  }
+
+  req.email = user.email; // Attach the user's email to the request
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
 });

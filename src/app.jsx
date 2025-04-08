@@ -76,6 +76,46 @@ export default function App() {
     setUserName('');
   };
 
+  const handlePixelClick = async (id) => {
+    if (!signedIn) {
+      setShowAuthModal(true);
+      return;
+    }
+  
+    if (!isPlanningMode && !canPaint) {
+      console.log('Cannot paint yet, timer is still running');
+      return;
+    }
+  
+    try {
+      const newColor = brushColor;
+      const newBorderColor = adjustLightness(newColor, -40);
+      const token = localStorage.getItem('token');
+      const username = localStorage.getItem('username');
+  
+      const response = await fetch(`/api/pixels/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          color: newColor,
+          borderColor: newBorderColor,
+          lastChangedBy: username,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+  
+      console.log('Pixel updated successfully');
+    } catch (error) {
+      console.error('Failed to update pixel on the server', error);
+    }
+  };
+
   return (
     <AuthProvider>
       <BrowserRouter>
