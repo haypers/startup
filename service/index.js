@@ -254,12 +254,32 @@ apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
       lastChangedBy: req.user.email,
     });
 
+    // Broadcast the updated pixel to all connected clients
+    broadcastPixelUpdate(pixelId, pixel);
+
     res.status(200).send(pixel);
   } catch (error) {
     console.error('Error updating pixel:', error);
     res.status(500).send({ msg: 'Failed to update pixel' });
   }
 });
+
+// Add this function to broadcast pixel updates to all connected clients
+function broadcastPixelUpdate(pixelId, updatedPixel) {
+  // Create a more efficient update by just sending the changed pixel
+  const update = {
+    type: 'pixelUpdate',
+    pixelId,
+    pixel: updatedPixel
+  };
+
+  // Send the update to all connected clients
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(update));
+    }
+  });
+}
 
 // Endpoint to get all pixels
 apiRouter.get('/pixels', async (req, res) => {
@@ -571,11 +591,34 @@ wss.on('connection', (ws, req) => {
   onlineUsers.set(email, ws);
 
   console.log(`User connected: ${email}`);
+  
+  // Send the full pixel grid to the newly connected client
+  ws.send(JSON.stringify({
+    type: 'fullSync',
+    pixels: pixels
+  }));
 
   // Handle WebSocket disconnection
   ws.on('close', () => {
     onlineUsers.delete(email);
     console.log(`User disconnected: ${email}`);
+  });
+  
+  // Handle incoming messages from clients
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message);
+      
+      if (data.type === 'requestSync') {
+        // Client is requesting a full sync
+        ws.send(JSON.stringify({
+          type: 'fullSync',
+          pixels: pixels
+        }));
+      }
+    } catch (error) {
+      console.error('Error processing WebSocket message:', error);
+    }
   });
 });
 

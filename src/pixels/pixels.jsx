@@ -263,12 +263,37 @@ const handlePixelClick = async (id) => {
     if (!token) return;
 
     // Open a WebSocket connection
-    const ws = new WebSocket(`ws://localhost:4000`, token);
+    const ws = new WebSocket(`ws://${window.location.host}`, token);
+    // For development with Vite proxy:
+    // const ws = new WebSocket(`ws://${window.location.hostname}:4000`, token);
+    
+    ws.onopen = () => {
+      console.log('WebSocket connection established');
+    };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log('WebSocket message received:', data.type);
+      
       if (data.type === 'notification') {
-        setNotifications((prev) => [...prev, data.message]); // Add new notification
+        // Handle notifications
+        setNotifications((prev) => [...prev, data.message]);
+      } 
+      else if (data.type === 'pixelUpdate') {
+        // Handle single pixel update
+        setPixels(currentPixels => {
+          const newPixels = [...currentPixels];
+          const index = newPixels.findIndex(p => p.id === data.pixelId);
+          if (index !== -1) {
+            newPixels[index] = data.pixel;
+          }
+          return newPixels;
+        });
+      }
+      else if (data.type === 'fullSync') {
+        // Handle full grid sync
+        console.log('Received full grid sync with', data.pixels.length, 'pixels');
+        setPixels(data.pixels);
       }
     };
 
@@ -276,10 +301,24 @@ const handlePixelClick = async (id) => {
       console.log('WebSocket connection closed');
     };
 
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    // Store the WebSocket connection for cleanup
+    const wsConnection = ws;
+    
     return () => {
-      ws.close();
+      wsConnection.close();
     };
   }, []);
+
+  // Add ability to request a sync if needed
+  const requestGridSync = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'requestSync' }));
+    }
+  };
 
   return (
     <main className="container-fluid bg-secondary text-center">
