@@ -151,9 +151,19 @@
 
   .color-grid {
     display: flex;
-    flex-direction:row;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     align-items: center;
     margin-top: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 100vw;
+    padding: 0 5px;
+  }
+  
+  .color-box {
+    margin: 5px;
   }
   
   .InfoPanel {
