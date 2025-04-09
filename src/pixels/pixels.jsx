@@ -451,19 +451,7 @@ useEffect(() => {
                   )}
                 </ul>
               </div>
-            </section>
-            
-            <button 
-              className="btn btn-info"  
-              onClick={() => {
-                console.log('[Debug] WebSocket state:', window.pixelGridWS?.readyState);
-                console.log('[Debug] Token:', localStorage.getItem('token')?.substring(0, 5) + '...');
-                console.log('[Debug] Username:', localStorage.getItem('username'));
-                requestGridSync();
-              }}>
-              Debug Connection
-            </button>
-            
+            </section>            
           </section>
         ) : (
           <section className="InfoPanel">
