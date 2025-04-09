@@ -62,24 +62,20 @@ Have you ever wanted to make fun pixel art, but don't know where to start? don't
 - [x] **Calls to third party endpoints** - The colors of the day come from a 3rd party.
 - [x] **Backend service endpoints** - I can now call a put to update the pixel records on the server side. I also now keep user records on the server side. (non password hashed, I'll do that in the DB phase.)
 - [x] **Frontend calls service endpoints** - The user can now log in, or sign up, change pixels, and more, all by sending endpoint requests.
-## 🚀 DB/Login deliverable
 - [x] **User registration** - Login now sends a new user record to mongo
 - [x] **User login and logout** - User records are persistant, and you can log in from any device once you make an account.
 - [x] **Stores data in MongoDB** - The data for the pixels, color of the day, and history snapshosts are now saved on the mongo db.
 - [x] **Stores credentials in MongoDB** - User tokens and hashes are stored in mongo, and are used to verify login attempts.
 - [x] **Restricts functionality based on authentication** - Users may not edit the grid until they have authenticated themselves via the records in mongo.
+## 🚀 WebSocket deliverable
+- [x] **Backend listens for WebSocket connection** - YEP! When the user changes a pixel, the data is sent to the server via websocket
+- [x] **Frontend makes WebSocket connection** - The server will then ping the following: The user who last changed that pixel will be notified that their pixel was destroyed (along with cords) and then ALL users will get a package from the server with the updated pixel data.
+- [x] **Data sent over WebSocket connection** - All notifications of destroyed or updated pixels is now done via websocket
+- [x] **WebSocket data displayed** - The notifications area prints logs to the user about notifications they are ment to read. Most are just used to update the pixels, but some updates are displayed to the user. The ones about changes to pixels they previously changed in specific.
+- [x] **Application is fully functional** - As I origionally described this idea, it is complete. All the requirments for the project are done, however I want to finish the following ToDos:
+
 
 Todo: history screenshots are taken too often, check for douplicates, that code must have broken.
 
 NOTE: the planning feature is new, and not done yet. And I'm still trying to get my server to save the history images. I'm close, but that will take a little more reaserch.
 
-
-## 🚀 WebSocket deliverable
-
-For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
-
-- [ ] **Backend listens for WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Frontend makes WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **Data sent over WebSocket connection** - I did not complete this part of the deliverable.
-- [ ] **WebSocket data displayed** - I did not complete this part of the deliverable.
-- [ ] **Application is fully functional** - I did not complete this part of the deliverable.
