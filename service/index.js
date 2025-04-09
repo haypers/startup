@@ -636,22 +636,22 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-      console.log(`[WebSocket] Received message of type ${data.type} from ${email}`);
+      //console.log(`[WebSocket] Received message of type ${data.type} from ${email}`);
       
       if (data.type === 'requestSync') {
         // Client is requesting a full sync
-        console.log(`[WebSocket] Sending full sync to ${email} upon request`);
+        //console.log(`[WebSocket] Sending full sync to ${email} upon request`);
         ws.send(JSON.stringify({
           type: 'fullSync',
           pixels: pixels
         }));
       } else if (data.type === 'identify') {
-        console.log(`[WebSocket] User identified as ${data.email}`);
+        //console.log(`[WebSocket] User identified as ${data.email}`);
         // Update the email if it was provided in the message
         if (data.email && data.email !== email) {
           onlineUsers.delete(email);
           onlineUsers.set(data.email, ws);
-          console.log(`[WebSocket] Updated user mapping from ${email} to ${data.email}`);
+          //console.log(`[WebSocket] Updated user mapping from ${email} to ${data.email}`);
         }
       }
     } catch (error) {

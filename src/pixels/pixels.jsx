@@ -321,20 +321,20 @@ useEffect(() => {
         setPixels(data.pixels);
       }
       else if (data.type === 'connectionConfirmed') {
-        console.log('[WebSocket] Server confirmed connection for:', data.email);
+        //console.log('[WebSocket] Server confirmed connection for:', data.email);
       }
     } catch (error) {
-      console.error('[WebSocket] Error parsing message:', error, event.data);
+      //console.error('[WebSocket] Error parsing message:', error, event.data);
     }
   };
 
   ws.onclose = (event) => {
-    console.log('[WebSocket] Connection closed with code:', event.code, 'reason:', event.reason);
+    //console.log('[WebSocket] Connection closed with code:', event.code, 'reason:', event.reason);
     // Try to reconnect after a delay if the closure wasn't intentional
     if (event.code !== 1000) { // Normal closure
-      console.log('[WebSocket] Will attempt to reconnect in 5 seconds...');
+      //console.log('[WebSocket] Will attempt to reconnect in 5 seconds...');
       setTimeout(() => {
-        console.log('[WebSocket] Attempting to reconnect...');
+        //console.log('[WebSocket] Attempting to reconnect...');
         // This will trigger the useEffect again
         setWSReconnect(prev => !prev); // Add this state var to component
       }, 5000);
