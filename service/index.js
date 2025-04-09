@@ -223,36 +223,50 @@ apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
     const pixelId = parseInt(req.params.id);
     const { color, borderColor, lastChangedBy } = req.body;
 
+    console.log(`[Pixel Update] User ${req.user.email} updating pixel ${pixelId}`);
+    
     const pixel = pixels.find((p) => p.id === pixelId);
     if (!pixel) {
       return res.status(404).send({ msg: 'Pixel not found' });
     }
 
+    // Store the previous state for notification
+    const previousOwner = pixel.lastChangedBy;
+    
+    console.log(`[Pixel Update] Previous pixel owner: ${previousOwner || 'none'}`);
+
     // Notify the previous user if they are online
-    if (pixel.lastChangedBy && pixel.lastChangedBy !== req.user.email) {
-      const previousUserWs = onlineUsers.get(pixel.lastChangedBy);
-      if (previousUserWs) {
-        previousUserWs.send(
-          JSON.stringify({
-            type: 'notification',
-            message: `${req.user.email} destroyed your pixel`,
-          })
-        );
+    if (previousOwner && previousOwner !== req.user.email) {
+      const previousUserWs = onlineUsers.get(previousOwner);
+      console.log(`[Notification] Checking if ${previousOwner} is online: ${!!previousUserWs}`);
+      
+      if (previousUserWs && previousUserWs.readyState === WebSocket.OPEN) {
+        const notification = {
+          type: 'notification',
+          message: `${req.user.email} destroyed your pixel at position ${pixelId % 50}, ${Math.floor(pixelId / 50)}`
+        };
+        
+        console.log(`[Notification] Sending to ${previousOwner}: ${notification.message}`);
+        previousUserWs.send(JSON.stringify(notification));
       }
     }
 
     // Update the pixel state in memory
     pixel.color = color;
-    pixel.borderColor = borderColor;
+    pixel.borderColor = borderColor || adjustLightness(color, -40);
     pixel.lastChangedBy = req.user.email;
+
+    console.log(`[Pixel Update] Updated pixel ${pixelId} in memory`);
 
     // Update the pixel in the database
     await DB.updatePixel(pixelId, {
       id: pixelId,
       color: color,
-      borderColor: borderColor,
+      borderColor: pixel.borderColor,
       lastChangedBy: req.user.email,
     });
+
+    console.log(`[Pixel Update] Updated pixel ${pixelId} in database`);
 
     // Broadcast the updated pixel to all connected clients
     broadcastPixelUpdate(pixelId, pixel);
@@ -266,6 +280,9 @@ apiRouter.put('/pixels/:id', verifyAuth, async (req, res) => {
 
 // Add this function to broadcast pixel updates to all connected clients
 function broadcastPixelUpdate(pixelId, updatedPixel) {
+  const connectedClients = [...onlineUsers.entries()];
+  console.log(`[WebSocket] Broadcasting pixel update for pixel ${pixelId} to ${connectedClients.length} clients`);
+  
   // Create a more efficient update by just sending the changed pixel
   const update = {
     type: 'pixelUpdate',
@@ -273,12 +290,16 @@ function broadcastPixelUpdate(pixelId, updatedPixel) {
     pixel: updatedPixel
   };
 
-  // Send the update to all connected clients
+  // Send the update to all connected clients except the one who made the change
+  let sentCount = 0;
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(update));
+      sentCount++;
     }
   });
+  
+  console.log(`[WebSocket] Sent update to ${sentCount} clients`);
 }
 
 // Endpoint to get all pixels
@@ -579,45 +600,62 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Create a WebSocket server
-const wss = new WebSocket.Server({ noServer: true });
-
 // Track online users and their WebSocket connections
 const onlineUsers = new Map(); // Map of `email -> WebSocket`
+
+// Create a WebSocket server
+const wss = new WebSocket.Server({ noServer: true });
 
 // Handle WebSocket connections
 wss.on('connection', (ws, req) => {
   const email = req.email; // Attach the user's email to the WebSocket connection
+  
+  console.log(`[WebSocket] User connected: ${email}`);
   onlineUsers.set(email, ws);
-
-  console.log(`User connected: ${email}`);
+  
+  // Confirm connection to the client
+  ws.send(JSON.stringify({
+    type: 'connectionConfirmed',
+    email: email
+  }));
   
   // Send the full pixel grid to the newly connected client
   ws.send(JSON.stringify({
     type: 'fullSync',
     pixels: pixels
   }));
+  console.log(`[WebSocket] Sent full sync to ${email}`);
 
   // Handle WebSocket disconnection
   ws.on('close', () => {
     onlineUsers.delete(email);
-    console.log(`User disconnected: ${email}`);
+    console.log(`[WebSocket] User disconnected: ${email}`);
   });
   
   // Handle incoming messages from clients
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
+      console.log(`[WebSocket] Received message of type ${data.type} from ${email}`);
       
       if (data.type === 'requestSync') {
         // Client is requesting a full sync
+        console.log(`[WebSocket] Sending full sync to ${email} upon request`);
         ws.send(JSON.stringify({
           type: 'fullSync',
           pixels: pixels
         }));
+      } else if (data.type === 'identify') {
+        console.log(`[WebSocket] User identified as ${data.email}`);
+        // Update the email if it was provided in the message
+        if (data.email && data.email !== email) {
+          onlineUsers.delete(email);
+          onlineUsers.set(data.email, ws);
+          console.log(`[WebSocket] Updated user mapping from ${email} to ${data.email}`);
+        }
       }
     } catch (error) {
-      console.error('Error processing WebSocket message:', error);
+      console.error('[WebSocket] Error processing message:', error);
     }
   });
 });
@@ -629,15 +667,27 @@ app.server = app.listen(port, () => {
 
 app.server.on('upgrade', async (req, socket, head) => {
   const token = req.headers['sec-websocket-protocol']; // Use the token for authentication
-  const user = await findUser('token', token);
-
-  if (!user) {
+  console.log(`[WebSocket] Upgrade request with token: ${token ? token.substring(0, 5) + '...' : 'undefined'}`);
+  
+  try {
+    const user = await findUser('token', token);
+    
+    if (!user) {
+      console.log('[WebSocket] Authentication failed: No user found for token');
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+    
+    console.log(`[WebSocket] Authentication successful for ${user.email}`);
+    req.email = user.email; // Attach the user's email to the request
+    
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req);
+    });
+  } catch (error) {
+    console.error('[WebSocket] Error during WebSocket upgrade:', error);
+    socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
     socket.destroy();
-    return;
   }
-
-  req.email = user.email; // Attach the user's email to the request
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit('connection', ws, req);
-  });
 });

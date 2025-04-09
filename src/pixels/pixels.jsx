@@ -17,6 +17,7 @@ export function Pixels({ signedIn, setSignedIn }) {
   const [showAuthModal, setShowAuthModal] = useState(false); // New state for auth modal
   const [notifications, setNotifications] = useState([]); // New state for notifications
   const [pendingUpdates, setPendingUpdates] = useState({}); // New state for pending updates
+  const [wsReconnect, setWSReconnect] = useState(false); // New state for WebSocket reconnection
   
   // Log the username to check if it is being retrieved correctly
   useEffect(() => {
@@ -259,26 +260,55 @@ const handlePixelClick = async (id) => {
     }
   }, []);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  // In pixels.jsx - Update the WebSocket effect
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  console.log('[WebSocket] Setting up connection with token:', token ? token.substring(0, 5) + '...' : 'null');
+  
+  if (!token) {
+    console.warn('[WebSocket] No token available, skipping WebSocket setup');
+    return;
+  }
 
-    // Open a WebSocket connection
-    const ws = new WebSocket(`ws://${window.location.host}`, token);
-    // For development with Vite proxy:
-    // const ws = new WebSocket(`ws://${window.location.hostname}:4000`, token);
-    
-    ws.onopen = () => {
-      console.log('WebSocket connection established');
-    };
+  // Get the correct WebSocket URL
+  let wsUrl;
+  if (window.location.protocol === 'https:') {
+    wsUrl = `wss://${window.location.host}`;
+  } else {
+    wsUrl = `ws://${window.location.host}`;
+  }
+  
+  console.log(`[WebSocket] Connecting to ${wsUrl}`);
+  
+  // In development with Vite, we need to handle the proxy
+  if (import.meta.env.DEV) {
+    wsUrl = `ws://${window.location.hostname}:4000`;
+    console.log(`[WebSocket] Dev mode - using ${wsUrl}`);
+  }
 
-    ws.onmessage = (event) => {
+  // Initialize connection with token as protocol
+  const ws = new WebSocket(wsUrl, token);
+  
+  ws.onopen = () => {
+    console.log('[WebSocket] Connection established successfully');
+    // Send an initial message to identify the user
+    ws.send(JSON.stringify({
+      type: 'identify',
+      email: localStorage.getItem('username')
+    }));
+  };
+
+  ws.onmessage = (event) => {
+    try {
       const data = JSON.parse(event.data);
+      console.log('[WebSocket] Message received:', data);
       
       if (data.type === 'notification') {
+        console.log('[WebSocket] Notification received:', data.message);
         setNotifications((prev) => [...prev, data.message]);
       } 
       else if (data.type === 'pixelUpdate') {
+        console.log('[WebSocket] Pixel update received for ID:', data.pixelId);
         // Add to pending updates instead of immediately updating
         setPendingUpdates(prev => ({
           ...prev,
@@ -286,31 +316,52 @@ const handlePixelClick = async (id) => {
         }));
       }
       else if (data.type === 'fullSync') {
+        console.log('[WebSocket] Full sync received with', data.pixels.length, 'pixels');
         // Full syncs still update immediately
         setPixels(data.pixels);
       }
-    };
+      else if (data.type === 'connectionConfirmed') {
+        console.log('[WebSocket] Server confirmed connection for:', data.email);
+      }
+    } catch (error) {
+      console.error('[WebSocket] Error parsing message:', error, event.data);
+    }
+  };
 
-    ws.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
+  ws.onclose = (event) => {
+    console.log('[WebSocket] Connection closed with code:', event.code, 'reason:', event.reason);
+    // Try to reconnect after a delay if the closure wasn't intentional
+    if (event.code !== 1000) { // Normal closure
+      console.log('[WebSocket] Will attempt to reconnect in 5 seconds...');
+      setTimeout(() => {
+        console.log('[WebSocket] Attempting to reconnect...');
+        // This will trigger the useEffect again
+        setWSReconnect(prev => !prev); // Add this state var to component
+      }, 5000);
+    }
+  };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+  ws.onerror = (error) => {
+    console.error('[WebSocket] Error:', error);
+  };
 
-    // Store the WebSocket connection for cleanup
-    const wsConnection = ws;
-    
-    return () => {
-      wsConnection.close();
-    };
-  }, []);
+  // Store the WebSocket reference at component level
+  // so we can use it elsewhere (requestGridSync)
+  window.pixelGridWS = ws; 
+
+  return () => {
+    console.log('[WebSocket] Closing connection on cleanup');
+    ws.close();
+  };
+}, [wsReconnect]); // Add wsReconnect as dependency
 
   // Add ability to request a sync if needed
   const requestGridSync = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'requestSync' }));
+    if (window.pixelGridWS && window.pixelGridWS.readyState === WebSocket.OPEN) {
+      console.log('[WebSocket] Requesting grid sync');
+      window.pixelGridWS.send(JSON.stringify({ type: 'requestSync' }));
+    } else {
+      console.warn('[WebSocket] Cannot request sync: WebSocket not open');
     }
   };
 
@@ -401,6 +452,17 @@ const handlePixelClick = async (id) => {
                 </ul>
               </div>
             </section>
+            
+            <button 
+              className="btn btn-info"  
+              onClick={() => {
+                console.log('[Debug] WebSocket state:', window.pixelGridWS?.readyState);
+                console.log('[Debug] Token:', localStorage.getItem('token')?.substring(0, 5) + '...');
+                console.log('[Debug] Username:', localStorage.getItem('username'));
+                requestGridSync();
+              }}>
+              Debug Connection
+            </button>
             
           </section>
         ) : (
