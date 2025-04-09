@@ -19,10 +19,6 @@ export function Pixels({ signedIn, setSignedIn }) {
   const [pendingUpdates, setPendingUpdates] = useState({}); // New state for pending updates
   const [wsReconnect, setWSReconnect] = useState(false); // New state for WebSocket reconnection
   
-  // Log the username to check if it is being retrieved correctly
-  useEffect(() => {
-    console.log('Username:', username);
-  }, [username]);
 
   useEffect(() => {
     if (signedIn && username) {
@@ -101,12 +97,6 @@ export function Pixels({ signedIn, setSignedIn }) {
     }
   }, [signedIn, timer, isPlanningMode]);
 
-  // Effect for checking and generating image every minute
-  useEffect(() => {
-    console.log('Image generation now handled by server');
-    
-    return () => {};
-  }, []);  
 
   // Utility functions that are still used elsewhere
   const hexToRgb = (hex) => {
@@ -146,7 +136,7 @@ const handlePixelClick = async (id) => {
   }
 
   if (!isPlanningMode && !canPaint) {
-    console.log('Cannot paint yet, timer is still running');
+    //console.log('Cannot paint yet, timer is still running');
     return;
   }
 
@@ -156,7 +146,7 @@ const handlePixelClick = async (id) => {
     
     // Get token from localStorage
     const token = localStorage.getItem('token');
-    console.log('Token from localStorage:', token ? `${token.substring(0, 5)}...` : 'null');
+    //console.log('Token from localStorage:', token ? `${token.substring(0, 5)}...` : 'null');
 
     if (!token) {
       console.error('No authentication token found in localStorage');
@@ -177,7 +167,7 @@ const handlePixelClick = async (id) => {
     });
 
     // Send the request with the token in the Authorization header
-    console.log(`Sending request to update pixel ${id} with token ${token.substring(0, 5)}...`);
+    //console.log(`Sending request to update pixel ${id} with token ${token.substring(0, 5)}...`);
     const response = await fetch(`/api/pixels/${id}`, {
       method: 'PUT',
       headers: {
@@ -201,7 +191,7 @@ const handlePixelClick = async (id) => {
     setTimerMessage("Draw a pixel in:");
     setSubMessage("15 seconds");
 
-    console.log('Pixel updated successfully');
+    //console.log('Pixel updated successfully');
   } catch (error) {
     console.error('Failed to update pixel on the server', error);
     
@@ -235,7 +225,7 @@ const handlePixelClick = async (id) => {
     const username = localStorage.getItem('username');
     
     if (token && username) {
-      console.log(`Found stored credentials for ${username}`);
+      //console.log(`Found stored credentials for ${username}`);
       // Validate the token with the server
       fetch('/api/auth/status', {
         headers: {
@@ -263,7 +253,7 @@ const handlePixelClick = async (id) => {
   // In pixels.jsx - Update the WebSocket effect
 useEffect(() => {
   const token = localStorage.getItem('token');
-  console.log('[WebSocket] Setting up connection with token:', token ? token.substring(0, 5) + '...' : 'null');
+  //console.log('[WebSocket] Setting up connection with token:', token ? token.substring(0, 5) + '...' : 'null');
   
   if (!token) {
     console.warn('[WebSocket] No token available, skipping WebSocket setup');
@@ -278,19 +268,19 @@ useEffect(() => {
     wsUrl = `ws://${window.location.host}`;
   }
   
-  console.log(`[WebSocket] Connecting to ${wsUrl}`);
+  //console.log(`[WebSocket] Connecting to ${wsUrl}`);
   
   // In development with Vite, we need to handle the proxy
   if (import.meta.env.DEV) {
     wsUrl = `ws://${window.location.hostname}:4000`;
-    console.log(`[WebSocket] Dev mode - using ${wsUrl}`);
+    //console.log(`[WebSocket] Dev mode - using ${wsUrl}`);
   }
 
   // Initialize connection with token as protocol
   const ws = new WebSocket(wsUrl, token);
   
   ws.onopen = () => {
-    console.log('[WebSocket] Connection established successfully');
+    //console.log('[WebSocket] Connection established successfully');
     // Send an initial message to identify the user
     ws.send(JSON.stringify({
       type: 'identify',
@@ -301,14 +291,14 @@ useEffect(() => {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('[WebSocket] Message received:', data);
+      //console.log('[WebSocket] Message received:', data);
       
       if (data.type === 'notification') {
-        console.log('[WebSocket] Notification received:', data.message);
+        //console.log('[WebSocket] Notification received:', data.message);
         setNotifications((prev) => [...prev, data.message]);
       } 
       else if (data.type === 'pixelUpdate') {
-        console.log('[WebSocket] Pixel update received for ID:', data.pixelId);
+        //console.log('[WebSocket] Pixel update received for ID:', data.pixelId);
         // Add to pending updates instead of immediately updating
         setPendingUpdates(prev => ({
           ...prev,
