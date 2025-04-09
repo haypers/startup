@@ -3,7 +3,6 @@
 [My startup](https://startup.haypers.com)
 
 
-
 ## Helpful links
 
 - [Course instruction](https://github.com/webprogramming260)
@@ -13,7 +12,7 @@ Example: https://github.com/webprogramming260/startup-example/blob/main/README.m
 
 ## AWS Notes
 
-I setup my account, and bookmarked the dash.
+I setup my account, and bookmarked the dash. I should rebuild my personal website when I have the chance.
 
 ## HTML Notes
 
@@ -26,3 +25,5 @@ But I've got the main navigation working.
 I think my first step will be to get css organising the screen correctly, and rendering a grid on mobile. That might be difficult.
 
 So I need to learn how to debug the array data on the server side to get the images saving on the server side to work.
+
+I need to do some research on how vite and npm interact better, cuz I'm having a hard time getting my code to run localy, but when I deploy it it works great, or visa versa depending on where I tell my program to look for a index.html file.
